@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # 项目名称与版本配置（对应你们的 2026 校园RPG大作业）
 project(CampusRPG VERSION 1.0 LANGUAGES CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 要求支持 C++20 标准（Qt6 推荐至少 C++17，C++20 更佳）
 set(CMAKE_CXX_STANDARD 20)
