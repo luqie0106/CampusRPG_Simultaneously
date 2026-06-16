@@ -3,6 +3,12 @@
 #include "Character.h"
 #include "Common.h"
 
+struct ShopItem {
+    std::shared_ptr<Item> item;
+    int stock;
+    int maxStock;
+};
+
 class Shop {
 public:
     Shop();
@@ -17,6 +23,10 @@ public:
     // 购买物品
     std::stringstream BuyItem(std::shared_ptr<Character> player, int itemIndex);
 
+    // 刷新商店库存
+    void RefreshShop();
+
 private:
-    std::vector<std::shared_ptr<Item>> m_shopItems;
+    std::vector<ShopItem> m_shopItems;
+    std::chrono::system_clock::time_point lastRefreshTime;
 };

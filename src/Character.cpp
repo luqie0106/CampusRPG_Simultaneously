@@ -1,5 +1,6 @@
 #include "../include/Character.h"
 #include "../include/TimerManager.h"
+#include "../include/Exceptions.h"
 Character::Character(std::string name, int health, int attack, int defense, int gold, double dodge_rate, int level, int StaggerPoint) : 
 name(name), health(health), maxHealth(health), attack(attack), defense(defense), gold(gold), dodge_rate(dodge_rate), level(level), StaggerPoint(StaggerPoint) {}
 
@@ -19,6 +20,22 @@ void Character::ConsumeFood(const Food& food) {
             this->foodTimer.store(0.0f);
         }
     );
+}
+
+int Character::GetGold() const {
+    return gold;
+}
+
+bool Character::SpendGold(int amount) {
+    if (gold < amount) {
+        throw NoEnoughGoldException("金币不足！");
+    }
+    gold -= amount;
+    return true;
+}
+
+Backpack& Character::GetBackpack() {
+    return backpack;
 }
 
 std::stringstream Character::DisplayStatus() const {

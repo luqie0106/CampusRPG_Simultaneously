@@ -1,4 +1,5 @@
 #include "../include/SaveSys.h"
+#include "../include/Exceptions.h"
 
 // 构造函数：初始化数据库连接
 SaveSys::SaveSys() {
@@ -10,8 +11,7 @@ SaveSys::SaveSys() {
 // 初始化建表的方法
 bool SaveSys::initDatabase() {
     if (!db.open()) {
-        qDebug() << "数据库打开失败:" << db.lastError().text();
-        return false;
+        throw GameException("数据库打开失败:" + db.lastError().text().toStdString());
     }
 
     QSqlQuery query;
@@ -21,7 +21,7 @@ bool SaveSys::initDatabase() {
                               "level INTEGER, "
                               "hp INTEGER);");
     if (!success) {
-        qDebug() << "建表失败:" << query.lastError().text();
+        throw GameException("建表失败:" + query.lastError().text().toStdString());
     } else {
         qDebug() << "数据库及玩家表初始化成功！";
     }

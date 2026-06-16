@@ -28,6 +28,10 @@ public:
 
     void ConsumeFood(const Food& food);
 
+    int GetGold() const;
+    bool SpendGold(int amount);
+    Backpack& GetBackpack();
+
     std::stringstream DisplayStatus() const;
 };
 

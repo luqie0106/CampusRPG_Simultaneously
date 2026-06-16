@@ -11,7 +11,7 @@ bool Item::operator==(const Item& other) const {
 
 std::stringstream Item::Show() const {
     std::stringstream ss;
-    ss << name << " " << value << std::endl;
+    ss << name << " " << value << '\n';
     return ss;
 }
 
@@ -24,6 +24,27 @@ int Food::GetDuration() const { return Duration; }
 
 std::stringstream Food::Show() const {
     std::stringstream ss;
-    ss << getName() << " " << getValue() << " " << GetHpRecovery() << std::endl;
+    ss << "【食物】" << getName() << " | 效果: 恢复 " << HpRecovery << " 点生命值";
+    return ss;
+}
+
+Medicine::Medicine(std::string name, int value, int MpRecovery) : Item(name, value), MpRecovery(MpRecovery) {}
+
+int Medicine::GetMpRecovery() const { return MpRecovery; }
+
+std::stringstream Medicine::Show() const {
+    std::stringstream ss;
+    ss << "【药品】" << getName() << " | 效果: 恢复 " << MpRecovery << " 点精力";
+    return ss;
+}
+
+Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus) : Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus) {}
+
+int Equipment::GetDefenseBonus() const { return defense_bonus; }
+int Equipment::GetAttackBonus() const { return attack_bonus; }
+
+std::stringstream Equipment::Show() const {
+    std::stringstream ss;
+    ss << "【装备】" << getName() << " | 效果: 攻击力+" << attack_bonus << " 防御力+" << defense_bonus;
     return ss;
 }
