@@ -26,6 +26,26 @@ int Character::GetGold() const {
     return gold;
 }
 
+// ── 属性访问 ─────────────────────────────────────────────────────
+
+std::string Character::GetName() const { return name; }
+int Character::GetHealth() const { return health; }
+int Character::GetMaxHealth() const { return maxHealth; }
+int Character::GetAttack() const { return attack; }
+int Character::GetDefense() const { return defense; }
+
+void Character::HealHp(int amount) {
+    health = std::min(health + amount, maxHealth);
+}
+
+void Character::AddAttack(int amount) {
+    attack += amount;
+}
+
+void Character::AddDefense(int amount) {
+    defense += amount;
+}
+
 bool Character::SpendGold(int amount) {
     if (gold < amount) {
         throw NoEnoughGoldException("金币不足！");

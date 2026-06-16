@@ -28,6 +28,18 @@ public:
 
     void ConsumeFood(const Food& food);
 
+    // ── 基础属性访问 ──────────────────────────
+    std::string GetName() const;
+    int GetHealth() const;
+    int GetMaxHealth() const;
+    int GetAttack() const;
+    int GetDefense() const;
+
+    // ── 属性修改（供 UseItem 调用） ───────────
+    void HealHp(int amount);            // 恢复生命值，不超过上限
+    void AddAttack(int amount);         // 永久增加攻击力
+    void AddDefense(int amount);        // 永久增加防御力
+
     int GetGold() const;
     bool SpendGold(int amount);
     Backpack& GetBackpack();
