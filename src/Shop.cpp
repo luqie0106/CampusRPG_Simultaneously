@@ -8,10 +8,21 @@ Shop::Shop() {
 Shop::~Shop() {}
 
 void Shop::InitShopItems() {
-    m_shopItems.push_back({std::make_shared<Food>("烤肉串", 20, 50), 10, 10});
-    m_shopItems.push_back({std::make_shared<Medicine>("提神饮料", 15, 30), 10, 10});
-    m_shopItems.push_back({std::make_shared<Equipment>("木制球棒", 80, 0, 10), 1, 1});
-    m_shopItems.push_back({std::make_shared<Equipment>("运动校服", 100, 15, 0), 1, 1});
+    // 食物
+    m_shopItems.push_back({Food::Steak(),                5, 5});
+    m_shopItems.push_back({Food::GoldenApple(),          3, 3});
+    m_shopItems.push_back({Food::EnchantedGoldenApple(), 1, 1});
+    // 药品
+    m_shopItems.push_back({Medicine::HealingPotion(),       5, 5});
+    m_shopItems.push_back({Medicine::StrongHealingPotion(), 3, 3});
+    m_shopItems.push_back({Medicine::RegenPotion(),         3, 3});
+    // 装备
+    m_shopItems.push_back({Equipment::IronSword(),    2, 2});
+    m_shopItems.push_back({Equipment::IronArmor(),    2, 2});
+    m_shopItems.push_back({Equipment::GoldenSword(),  1, 1});
+    m_shopItems.push_back({Equipment::GoldenArmor(),  1, 1});
+    m_shopItems.push_back({Equipment::DiamondSword(), 1, 1});
+    m_shopItems.push_back({Equipment::DiamondArmor(), 1, 1});
     lastRefreshTime = std::chrono::system_clock::now();
 }
 
@@ -66,11 +77,11 @@ std::stringstream Shop::BuyItem(std::shared_ptr<Character> player, int itemIndex
         
         std::unique_ptr<Item> newItem;
         if (auto food = std::dynamic_pointer_cast<Food>(shopItem.item)) {
-            newItem = std::make_unique<Food>(food->getName(), food->getValue(), food->GetHpRecovery());
+            newItem = std::make_unique<Food>(food->getName(), food->getValue(), food->GetHpRecovery(), food->GetAtkBuff(), food->GetDefBuff(), food->GetDuration());
         } else if (auto med = std::dynamic_pointer_cast<Medicine>(shopItem.item)) {
-            newItem = std::make_unique<Medicine>(med->getName(), med->getValue(), med->GetMpRecovery());
+            newItem = std::make_unique<Medicine>(med->getName(), med->getValue(), med->GetHpRecovery());
         } else if (auto equip = std::dynamic_pointer_cast<Equipment>(shopItem.item)) {
-            newItem = std::make_unique<Equipment>(equip->getName(), equip->getValue(), equip->GetDefenseBonus(), equip->GetAttackBonus());
+            newItem = std::make_unique<Equipment>(equip->getName(), equip->getValue(), equip->GetDefenseBonus(), equip->GetAttackBonus(), equip->GetDurability(), equip->GetSlot());
         } else {
             newItem = std::make_unique<Item>(shopItem.item->getName(), shopItem.item->getValue());
         }

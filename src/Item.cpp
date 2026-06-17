@@ -15,7 +15,8 @@ std::stringstream Item::Show() const {
     return ss;
 }
 
-Food::Food(std::string name, int value, int HpRecovery) : Item(name, value), HpRecovery(HpRecovery) {}
+Food::Food(std::string name, int value, int HpRecovery, int AtkBuff, int DefBuff, int Duration) : 
+    Item(name, value), HpRecovery(HpRecovery), AtkBuff(AtkBuff), DefBuff(DefBuff), Duration(Duration) {}
 
 int Food::GetHpRecovery() const { return HpRecovery; }
 int Food::GetAtkBuff() const { return AtkBuff; }
@@ -28,23 +29,146 @@ std::stringstream Food::Show() const {
     return ss;
 }
 
-Medicine::Medicine(std::string name, int value, int MpRecovery) : Item(name, value), MpRecovery(MpRecovery) {}
+Medicine::Medicine(std::string name, int value, int HpRecovery) : 
+    Item(name, value), HpRecovery(HpRecovery) {}
 
-int Medicine::GetMpRecovery() const { return MpRecovery; }
+int Medicine::GetHpRecovery() const { return HpRecovery; }
 
 std::stringstream Medicine::Show() const {
     std::stringstream ss;
-    ss << "【药品】" << getName() << " | 效果: 恢复 " << MpRecovery << " 点精力";
+    ss << "【药品】" << getName() << " | 效果: 恢复 " << HpRecovery << " 点精力";
     return ss;
 }
 
-Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus) : Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus) {}
+Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus, int durability, EquipSlot slot) : 
+    Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus), durability(durability), slot(slot) {}
 
 int Equipment::GetDefenseBonus() const { return defense_bonus; }
 int Equipment::GetAttackBonus() const { return attack_bonus; }
+int Equipment::GetDurability() const { return durability; }
+
+EquipSlot Equipment::GetSlot() const { return slot; }
+
+void Equipment::ReduceDurability(int amount) {
+    durability -= amount;
+}
 
 std::stringstream Equipment::Show() const {
     std::stringstream ss;
-    ss << "【装备】" << getName() << " | 效果: 攻击力+" << attack_bonus << " 防御力+" << defense_bonus;
+    ss << "【装备】" << getName() << " | 效果: 攻击力+" << attack_bonus << " 防御力+" << defense_bonus << " 耐久:" << durability;
     return ss;
+}
+
+// ========== Food 工厂 ==========
+std::shared_ptr<Food> Food::GoldenApple() {
+    // 金苹果: 恢复4颗心(8HP).       name    value   HpRecovery  AtkBuff  DefBuff  Duration
+    return std::make_shared<Food>("金苹果", 40,      8,            5,       10,       5);
+}
+
+std::shared_ptr<Food> Food::EnchantedGoldenApple() {
+    // 附魔金苹果: 恢复4颗心, 强力再生和吸收
+    return std::make_shared<Food>("附魔金苹果", 120,     20,     15,          25,       8);
+}
+
+std::shared_ptr<Food> Food::Steak() {
+    // 熟牛肉: 恢复8点饥饿, 少量攻击buff
+    return std::make_shared<Food>("熟牛排", 12,      15,          3,          0,        3);
+}
+
+std::shared_ptr<Food> Food::Pork() {
+    // 猪排: 恢复8点饥饿, 少量攻击buff
+    return std::make_shared<Food>("猪排", 16,      10,          2,          1,        3);
+}
+
+// ========== Medicine 工厂 ==========
+std::shared_ptr<Medicine> Medicine::HealingPotion() {
+    // 治疗药水I: 立即回复4颗心(8HP).     name      value    HpRecovery 
+    return std::make_shared<Medicine>("治疗药水", 25,       8);
+}
+
+std::shared_ptr<Medicine> Medicine::StrongHealingPotion() {
+    // 治疗药水II: 立即回复8颗心(16HP)     name          value    HpRecovery 
+    return std::make_shared<Medicine>("强效治疗药水",    50,        16);
+}
+
+std::shared_ptr<Medicine> Medicine::RegenPotion() {
+    // 再生药水: 回复较多血量, 模拟持续再生效果   name      value    HpRecovery 
+    return std::make_shared<Medicine>("再生药水", 35,       12);
+}
+
+// ========== Equipment 工厂 ==========
+std::shared_ptr<Equipment> Equipment::IronArmor() {
+    // 铁甲: 防御+15, 耐久250
+    //      name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("铁甲", 80,        15,      0,           250, EquipSlot::Body);
+}
+
+std::shared_ptr<Equipment> Equipment::GoldenArmor() {
+    // 金甲: 防御+11但价值高, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("金甲", 100,       11,      2,           77, EquipSlot::Body);
+}
+
+std::shared_ptr<Equipment> Equipment::DiamondArmor() {
+    // 钻石甲: 防御+20, 耐久1200   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("钻石甲", 300,       20,      0,           1200, EquipSlot::Body);
+}
+
+std::shared_ptr<Equipment> Equipment::IronSword() {
+    // 铁剑: 攻击+35, 耐久600   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("铁剑", 60,        0,       35,           600, EquipSlot::Weapon);
+}
+
+std::shared_ptr<Equipment> Equipment::GoldenSword() {
+    // 金剑: 攻击+4但很贵, 耐久32(金很软)   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("金剑", 80,       0,       15,           300, EquipSlot::Weapon);
+}
+
+std::shared_ptr<Equipment> Equipment::DiamondSword() {
+    // 钻石剑: 攻击+50, 耐久1500   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("钻石剑", 250,       0,       50,           1500, EquipSlot::Weapon);
+}
+
+std::shared_ptr<Equipment> Equipment::IronHelmet() {
+    // 铁头盔: 防御+10, 耐久250   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("铁头盔", 50,        10,      0,           250, EquipSlot::Head);
+}
+
+std::shared_ptr<Equipment> Equipment::GoldenHelmet() {
+    // 金头盔: 防御+7, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("金头盔", 70,       7,        2,           77, EquipSlot::Head);
+}
+
+std::shared_ptr<Equipment> Equipment::DiamondHelmet() {
+    // 钻石头盔: 防御+15, 耐久1200   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("钻石头盔", 250,       15,      0,           1200, EquipSlot::Head);
+}
+
+std::shared_ptr<Equipment> Equipment::IronLeggings() {
+    // 铁护腿: 防御+12, 耐久250   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("铁护腿", 60,        12,      0,           250, EquipSlot::Legs);
+}
+
+std::shared_ptr<Equipment> Equipment::GoldenLeggings() {
+    // 金护腿: 防御+8, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("金护腿", 80,       8,        2,           77, EquipSlot::Legs);
+}
+
+std::shared_ptr<Equipment> Equipment::DiamondLeggings() {
+    // 钻石护腿: 防御+18, 耐久1200   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("钻石护腿", 250,       18,      0,           1200, EquipSlot::Legs);
+}
+
+std::shared_ptr<Equipment> Equipment::IronBoots() {
+    // 铁靴子: 防御+6, 耐久250   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("铁靴子", 40,        6,      0,           250, EquipSlot::Feet);
+}
+
+std::shared_ptr<Equipment> Equipment::GoldenBoots() {
+    // 金靴子: 防御+4, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("金靴子", 60,       4,        2,           77, EquipSlot::Feet);
+}
+
+std::shared_ptr<Equipment> Equipment::DiamondBoots() {
+    // 钻石靴子: 防御+10, 耐久1200   name      value    defense_bonus  attack_bonus    durability
+    return std::make_shared<Equipment>("钻石靴子", 250,       10,      0,           1200, EquipSlot::Feet);
 }

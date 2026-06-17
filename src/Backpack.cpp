@@ -54,7 +54,7 @@ std::string Backpack::UseItem(int index, Character& player) {
 
     // ── Medicine：永久恢复 HP ─────────────────────────────────────────────
     } else if (Medicine* med = dynamic_cast<Medicine*>(raw)) {
-        int heal = med->GetMpRecovery();
+        int heal = med->GetHpRecovery();
         int before = player.GetHealth();
         player.HealHp(heal);
         int after = player.GetHealth();
@@ -68,16 +68,18 @@ std::string Backpack::UseItem(int index, Character& player) {
             ss << "  生命值已满，药品没有额外效果。\n";
         }
 
-    // ── Equipment：永久增加攻击/防御 ─────────────────────────────────────
+    // ── Equipment：穿戴装备 ─────────────────────────────────────
     } else if (Equipment* equip = dynamic_cast<Equipment*>(raw)) {
-        int atkBonus = equip->GetAttackBonus();
-        int defBonus = equip->GetDefenseBonus();
-        player.AddAttack(atkBonus);
-        player.AddDefense(defBonus);
+        std::unique_ptr<Item> item = std::move(items[idx]);
+        std::shared_ptr<Equipment> equipPtr(dynamic_cast<Equipment*>(item.release()));
+        
+        player.EquipItem(equipPtr);
 
-        ss << "装备了【" << equip->getName() << "】\n";
-        if (atkBonus > 0) ss << "  攻击力 +" << atkBonus << "\n";
-        if (defBonus > 0) ss << "  防御力 +" << defBonus << "\n";
+        ss << "装备了【" << equipPtr->getName() << "】\n";
+        int atkBonus = equipPtr->GetAttackBonus();
+        int defBonus = equipPtr->GetDefenseBonus();
+        if (atkBonus > 0) ss << "  攻击力 +" << atkBonus << " (来自装备)\n";
+        if (defBonus > 0) ss << "  防御力 +" << defBonus << " (来自装备)\n";
         ss << "  当前属性 → 攻击力: " << player.GetAttack()
            << "  防御力: " << player.GetDefense() << "\n";
 

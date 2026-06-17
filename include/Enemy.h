@@ -2,29 +2,50 @@
 
 #include "Common.h"
 
+class Character;
+
 class Enemy {
     private:
         std::string name;
-        int health; //当前健康值
-        int attack; //攻击力
-        int defense; //防御力
-        int exp; //击败获得经验
-        int gold; //击败获得金币
-        int maxStaggerPoints; //最大韧性值
-        int currentStaggerPoints; // 当前韧性值
-        std::atomic<bool> isStaggered; // 是否处于瘫痪状态
-        std::atomic<float> staggerTimer; // 瘫痪剩余时间计时器
+        int health;
+        int attack;
+        int defense;
+        int exp;
+        int gold;
+        int maxStaggerPoints;     // 最大韧性值（0 表示小怪，无韧度机制）
+        int currentStaggerPoints;
+        int staggerDuration;      // 瘫瘪持续回合数（小怪无意义）
+        bool isStaggered;
+        int staggerRoundsLeft;
+
     public:
-        Enemy(std::string name, int health, int attack, int defense, int exp, int gold, 
-            int maxStaggerPoints, int currentStaggerPoints, bool isStaggered, float staggerTimer);
+        // 基础构造函数
+        // 小怪：staggerDuration = 0，maxStaggerPoints = 0
+        // Boss：传入具体数值
+        Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
+              int maxStaggerPoints, int staggerDuration = 0);
 
         std::string DisplayStatus() const;
 
-        int GetHealth() const;
+        int  GetHealth() const;
+        bool IsStaggered() const;
+        bool TickStagger();
         void TakeDamage(int damage);
         void TakeToughnessDamage(int toughnessDamage);
-        int GetAttack() const;
-        int GetDefense() const;
-        int GetExp() const;
-        int GetGold() const;
+        std::string Attack(Character& target);
+        int  GetAttack() const;
+        int  GetDefense() const;
+        int  GetExp() const;
+        int  GetGold() const;
+
+        // ========== 小怪工厂 ==========
+        static Enemy Bully();           // 校园混混
+        static Enemy Skipper();         // 逃课大神
+        static Enemy Cheater();         // 考试黄牛
+        static Enemy GangMember();      // 小弟弟
+
+        // ========== Boss 工厂 ==========
+        static Enemy DeanOfStudents();  // 教导主任  (瘫瘪 1 回合)
+        static Enemy PECommittee();     // 体育委员长  (瘫瘪 2 回合)
+        static Enemy Principal();       // 校长      (瘫瘪 3 回合)
 };
