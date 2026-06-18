@@ -1,16 +1,33 @@
 #include "../include/Character.h"
 #include "../include/Exceptions.h"
-Character::Character(std::string name, int health, int attack, int defense, int gold, double dodge_rate, int level, int StaggerPoint) : 
-name(name), health(health), maxHealth(health), attack(attack), defense(defense), gold(gold), dodge_rate(dodge_rate), level(level), StaggerPoint(StaggerPoint) {}
 
-Character::Character(std::string name) : 
-name(name), health(20), maxHealth(20), attack(10), defense(5), gold(100), dodge_rate(0.05), level(1), StaggerPoint(10) {}
+Character::Character(std::string name, int health, int attack, int defense, int gold,
+                     double dodge_rate, int level, int StaggerPoint, CharacterClass cls)
+    : name(name), health(health), maxHealth(health), attack(attack), defense(defense),
+      gold(gold), dodge_rate(dodge_rate), level(level), StaggerPoint(StaggerPoint),
+      classType(cls) {}
+
+Character::Character(std::string name) 
+    : name(name), health(20), maxHealth(20), attack(10), defense(5),
+      gold(100), dodge_rate(0.05), level(1), StaggerPoint(10),
+      classType(CharacterClass::Student) {}
 
 void Character::ConsumeFood(const Food& food, int rounds) {
     // 如果已有 buff 就覆盖（重新开始计时）
     foodBuffAtk        = food.GetAtkBuff();
     foodBuffRoundsLeft = rounds;
     // HP 立即回复部分由 UseItem 那一层处理，这里只负责设置 buff
+}
+
+// ── 职业查询 ──────────────────────────────────────────────────────
+CharacterClass Character::GetClass() const { return classType; }
+
+std::string Character::GetClassName() const {
+    switch (classType) {
+        case CharacterClass::Athlete: return "体育生";
+        case CharacterClass::Nerd:    return "学霸";
+        default:                      return "普通学生";
+    }
 }
 
 int Character::GetGold() const {
@@ -169,7 +186,7 @@ const Backpack& Character::GetBackpack() const {
 std::stringstream Character::DisplayStatus() const {
     std::stringstream ss;
     ss << "角色信息：" << std::endl;
-    ss << "名字：" << name << std::endl;
+    ss << "名字：" << name << "  [" << GetClassName() << "]" << std::endl;
     ss << "生命值：" << health << "/" << maxHealth << std::endl;
     
     if (foodBuffAtk > 0 && foodBuffRoundsLeft > 0) {
@@ -193,4 +210,24 @@ std::stringstream Character::DisplayStatus() const {
 } //进阶优化建议： 如果后续发现界面卡顿，可以考虑抛弃 stringstream，
 // 直接在 Qt 侧通过 QString::recurring 或 QString("%1").arg(...) 来拼接，或者只有当数据真正发生变化时才更新界面。
 
-Steve::Steve() : Character("Steve", 20, 10, 5, 200, 0.12, 1, 10) {}
+// ─────────────────────────────────────────────────────────────────────────────
+// 职业派生类构造函数
+//
+// 属性对比（区分小怪 / Boss 血量量级）：
+//   Steve   : HP=20  ATK=10  DEF=5   Dodge=12%  Stagger=10  Gold=200
+//   Athlete : HP=35  ATK=16  DEF=3   Dodge=5%   Stagger=5   Gold=150
+//   Nerd    : HP=14  ATK=8   DEF=10  Dodge=25%  Stagger=12  Gold=250
+// ─────────────────────────────────────────────────────────────────────────────
+
+//               name   HP  ATK  DEF  Gold  Dodge   Lv  Stagger  Class
+Steve::Steve(std::string name)
+    : Character(name,   20,  10,   5, 200, 0.12,   1,  10, CharacterClass::Student) {}
+
+Steve::Steve()
+    : Character("Steve", 20, 10,   5, 200, 0.12,   1,  10, CharacterClass::Student) {}
+
+Athlete::Athlete(std::string name)
+    : Character(name,   35,  16,   3, 150, 0.05,   1,   5, CharacterClass::Athlete) {}
+
+Nerd::Nerd(std::string name)
+    : Character(name,   14,   8,  10, 250, 0.25,   1,  12, CharacterClass::Nerd) {}

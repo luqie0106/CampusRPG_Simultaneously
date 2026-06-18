@@ -58,14 +58,47 @@ std::string GameEngine::HandleMainMenuChoice(int choice) {
 // 创建角色
 // ─────────────────────────────────────────────────────────────────────────────
 
-std::string GameEngine::CreatePlayer(const std::string& name) {
+std::string GameEngine::GetClassSelectionText() const {
+    std::stringstream ss;
+    ss << "=== 职业选择 ===\n";
+    ss << "1. 体育生 (Athlete)\n";
+    ss << "   HP: 35  攻击: 16  防御: 3  闪避: 5%  破韧: 5  金币: 150\n";
+    ss << "   特色：高血量高输出，适合正面硬刚；破韧值低，难以打瘫痪 Boss。\n\n";
+    ss << "2. 学霸 (Nerd)\n";
+    ss << "   HP: 14  攻击: 8   防御: 10  闪避: 25%  破韧: 12  金币: 250\n";
+    ss << "   特色：高防御高闪避，持久耐打；血量脆，需善用道具。\n\n";
+    ss << "3. 普通学生 (Steve)\n";
+    ss << "   HP: 20  攻击: 10  防御: 5   闪避: 12%  破韧: 10  金币: 200\n";
+    ss << "   特色：全能均衡，上手容易，适合初次游玩。\n";
+    return ss.str();
+}
+
+std::string GameEngine::CreatePlayer(const std::string& name, int classType) {
     if (name.empty()) {
         return "错误：角色名称不能为空。\n";
     }
-    m_player = std::make_shared<Character>(name);
-    m_state  = GameState::InGame;
+
+    std::string className;
+    switch (classType) {
+        case 1:
+            m_player  = std::make_shared<Athlete>(name);
+            className = "体育生";
+            break;
+        case 2:
+            m_player  = std::make_shared<Nerd>(name);
+            className = "学霸";
+            break;
+        case 3:
+            m_player  = std::make_shared<Steve>(name);
+            className = "普通学生";
+            break;
+        default:
+            return "错误：无效的职业编号（1=体育生, 2=学霸, 3=普通学生）。\n";
+    }
+
+    m_state = GameState::InGame;
     std::stringstream ss;
-    ss << "角色「" << name << "」创建成功！冒险开始！\n";
+    ss << "角色「" << name << "」（" << className << "）创建成功！冒险开始！\n";
     return ss.str();
 }
 
@@ -461,3 +494,11 @@ int  GameEngine::GetBattleEnemyAtk()         const { return m_currentEnemy ? m_c
 int  GameEngine::GetBattleEnemyDef()         const { return m_currentEnemy ? m_currentEnemy->GetDefense()    : -1; }
 bool GameEngine::GetBattleEnemyIsStaggered() const { return m_currentEnemy ? m_currentEnemy->IsStaggered()   : false; }
 std::string GameEngine::GetBattleEnemyName() const { return m_currentEnemy ? m_currentEnemy->GetName()       : ""; }
+
+// ── 玩家职业 ────────────────────────────────────────────────────
+CharacterClass GameEngine::GetPlayerClass()     const {
+    return m_player ? m_player->GetClass() : CharacterClass::Student;
+}
+std::string GameEngine::GetPlayerClassName()    const {
+    return m_player ? m_player->GetClassName() : "";
+}

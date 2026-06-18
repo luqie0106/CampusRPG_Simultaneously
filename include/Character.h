@@ -3,6 +3,13 @@
 #include "Item.h"
 #include "Common.h"
 
+// 职业枚举（供 Qt MVC 层查询，不需解析字符串）
+enum class CharacterClass {
+    Student,  // 1 — 普通学生（均衡型）
+    Athlete,  // 2 — 体育生（高血量 / 高攻击）
+    Nerd,     // 3 — 学霸（高防御 / 高闪避）
+};
+
 class Character {
 public:
     static constexpr int MAX_LEVEL    = 20;  // 等级上限
@@ -20,6 +27,7 @@ private:
     int exp = 0;
     int level = 1; // 等级
     int StaggerPoint = 10; //破韧值
+    CharacterClass classType = CharacterClass::Student; // 职业类型
     Backpack backpack;
 
     std::shared_ptr<Equipment> equippedHead;
@@ -33,9 +41,15 @@ private:
 
 public:
     Character() = default;
-    Character(std::string name, int health, int attack, int defense, int gold, double dodge_rate, int level, int StaggerPoint);
+    Character(std::string name, int health, int attack, int defense, int gold,
+              double dodge_rate, int level, int StaggerPoint,
+              CharacterClass cls = CharacterClass::Student);
 
     explicit Character(std::string name);
+
+    // ── 职业查询 ─────────────────────────────────────
+    CharacterClass GetClass()     const;  // 返回职业枚举（供 Qt 判断图标）
+    std::string    GetClassName()  const;  // 返回职业中文名称
 
     // 吃食物：设置回合制 buff（默认 3 回合）
     void ConsumeFood(const Food& food, int rounds = 3);
@@ -85,7 +99,26 @@ public:
     std::stringstream DisplayStatus() const;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 职业派生类
+// 所有构造函数接收 std::string name，满足 CreatePlayer(name, classType) 调用规范
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 普通学生：均衡型，各项属性适中
 class Steve : public Character {
 public:
-    Steve();
+    explicit Steve(std::string name);
+    Steve();  // 保留无参版局内测试用
+};
+
+// 体育生：高血量、高攻击、低破韧值（不易打瘻痪敌人）
+class Athlete : public Character {
+public:
+    explicit Athlete(std::string name);
+};
+
+// 学霸：高防御、高闪避、低血量
+class Nerd : public Character {
+public:
+    explicit Nerd(std::string name);
 };

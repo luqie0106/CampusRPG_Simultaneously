@@ -43,8 +43,12 @@ public:
     std::string HandleMainMenuChoice(int choice);
 
     // ── 创建角色 API ──────────────────────────
-    // 用给定名字创建新角色，成功后状态变为 InGame
-    std::string CreatePlayer(const std::string& name);
+    // 根据职业编号创建对应派生类角色，成功后状态变为 InGame。
+    // classType: 1=体育生(Athlete)  2=学霸(Nerd)  3=普通学生(Steve)
+    std::string CreatePlayer(const std::string& name, int classType = 3);
+
+    // 返回职业选择说明文本（纯数据，不阻塞）；供 UI 在创建角色前展示
+    std::string GetClassSelectionText() const;
 
     // ── 游戏内主菜单 API ──────────────────────
     // 返回游戏内主菜单的展示文本
@@ -134,7 +138,8 @@ public:
     int         GetPlayerStaggerPoint()   const;  // 玩家破韧值
     int         GetPlayerFoodBuffAtk()    const;  // 食物攻击 buff（0=无）
     int         GetPlayerFoodBuffRounds() const;  // 食物 buff 剩余回合数
-
+    CharacterClass GetPlayerClass()       const;  // 职业枚举（供 Qt 切换图标）
+    std::string GetPlayerClassName()      const;  // 职业中文名（"体育生"/"学霸"/"普通学生"）
     // ── 背包（供 Qt 物品格子使用）─────────────
     // 返回背包物品 const 引用，可 dynamic_cast 判断子类型
     const std::vector<std::unique_ptr<Item>>& GetBackpackItems() const;
