@@ -1,5 +1,4 @@
 #include "../include/Character.h"
-#include "../include/TimerManager.h"
 #include "../include/Exceptions.h"
 Character::Character(std::string name, int health, int attack, int defense, int gold, double dodge_rate, int level, int StaggerPoint) : 
 name(name), health(health), maxHealth(health), attack(attack), defense(defense), gold(gold), dodge_rate(dodge_rate), level(level), StaggerPoint(StaggerPoint) {}
@@ -7,19 +6,11 @@ name(name), health(health), maxHealth(health), attack(attack), defense(defense),
 Character::Character(std::string name) : 
 name(name), health(20), maxHealth(20), attack(10), defense(5), gold(100), dodge_rate(0.05), level(1), StaggerPoint(10) {}
 
-void Character::ConsumeFood(const Food& food) {
-    buffAtk.store(food.GetAtkBuff());
-    foodTimer.store(static_cast<float>(food.GetDuration()));
-    
-    TimerManager::StartCountdown(static_cast<float>(food.GetDuration()),
-        [this](float remaining) {
-            this->foodTimer.store(remaining);
-        },
-        [this]() {
-            this->buffAtk.store(0);
-            this->foodTimer.store(0.0f);
-        }
-    );
+void Character::ConsumeFood(const Food& food, int rounds) {
+    // 如果已有 buff 就覆盖（重新开始计时）
+    foodBuffAtk        = food.GetAtkBuff();
+    foodBuffRoundsLeft = rounds;
+    // HP 立即回复部分由 UseItem 那一层处理，这里只负责设置 buff
 }
 
 int Character::GetGold() const {
@@ -32,7 +23,7 @@ std::string Character::GetName() const { return name; }
 int Character::GetHealth() const { return health; }
 int Character::GetMaxHealth() const { return maxHealth; }
 int Character::GetAttack() const { 
-    int totalAtk = attack;
+    int totalAtk = attack + foodBuffAtk;  // 加上当前食物 buff
     if (equippedWeapon) totalAtk += equippedWeapon->GetAttackBonus();
     if (equippedHead) totalAtk += equippedHead->GetAttackBonus();
     if (equippedBody) totalAtk += equippedBody->GetAttackBonus();
@@ -104,6 +95,22 @@ void Character::AddDefense(int amount) {
     defense += amount;
 }
 
+// ── 食物 Buff 回合推进 ────────────────────────────────────────────
+void Character::TickFoodBuff() {
+    if (foodBuffRoundsLeft <= 0) return;
+    --foodBuffRoundsLeft;
+    if (foodBuffRoundsLeft <= 0) {
+        foodBuffAtk        = 0;
+        foodBuffRoundsLeft = 0;
+    }
+}
+
+// ── 纯数据 Get（供 Qt MVC 层使用） ─────────────────────────────────
+double Character::GetDodgeRate()    const { return dodge_rate; }
+int    Character::GetStaggerPoint() const { return StaggerPoint; }
+int    Character::GetFoodBuffAtk()  const { return foodBuffAtk; }
+int    Character::GetFoodBuffRoundsLeft() const { return foodBuffRoundsLeft; }
+
 // ── 经验 & 升级 ───────────────────────────────────────────────────
 
 int Character::GetLevel() const { return level; }
@@ -147,7 +154,15 @@ bool Character::SpendGold(int amount) {
     return true;
 }
 
+void Character::AddGold(int amount) {
+    if (amount > 0) gold += amount;
+}
+
 Backpack& Character::GetBackpack() {
+    return backpack;
+}
+
+const Backpack& Character::GetBackpack() const {
     return backpack;
 }
 
@@ -157,12 +172,9 @@ std::stringstream Character::DisplayStatus() const {
     ss << "名字：" << name << std::endl;
     ss << "生命值：" << health << "/" << maxHealth << std::endl;
     
-    int currentBuff = buffAtk.load();
-    float currentTimer = foodTimer.load();
-    
-    if (currentBuff > 0 && currentTimer > 0.0f) {
-        ss << "攻击力：" << attack << " (+" << currentBuff << " 料理加成) | 料理剩余时间: " 
-           << std::fixed << std::setprecision(1) << currentTimer << "s\n";
+    if (foodBuffAtk > 0 && foodBuffRoundsLeft > 0) {
+        ss << "攻击力：" << attack << " (+" << foodBuffAtk
+           << " 料理加成) | 料理剩余回合: " << foodBuffRoundsLeft << "\n";
     } else {
         ss << "攻击力：" << attack << std::endl;
     }

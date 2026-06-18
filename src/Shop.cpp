@@ -37,6 +37,10 @@ void Shop::RefreshShop() {
     }
 }
 
+const std::vector<ShopItem>& Shop::GetShopItems() const {
+    return m_shopItems;
+}
+
 std::stringstream Shop::DisplayShop() {
     std::stringstream ss;
     ss << "\n=== 校园小卖部 ===" << '\n';

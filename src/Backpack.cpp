@@ -115,11 +115,29 @@ int Backpack::GetSize() const {
     return static_cast<int>(items.size());
 }
 
+const std::vector<std::unique_ptr<Item>>& Backpack::GetItems() const {
+    return items;
+}
+
 std::string Backpack::GetItemInfo(int index) const {
     if (index < 1 || index > static_cast<int>(items.size())) {
         return "（无效序号）";
     }
     return items[index - 1]->Show().str();
+}
+
+int Backpack::GetItemValue(int index) const {
+    if (index < 1 || index > static_cast<int>(items.size())) {
+        return -1;
+    }
+    return items[index - 1]->getValue();
+}
+
+std::string Backpack::GetItemName(int index) const {
+    if (index < 1 || index > static_cast<int>(items.size())) {
+        return "";
+    }
+    return items[index - 1]->getName();
 }
 
 std::string Backpack::GetBackpackInfo() const {

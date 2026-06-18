@@ -20,6 +20,9 @@ public:
     // 展示商店界面
     std::stringstream DisplayShop();
 
+    // 返回商店内全部商品的只读引用（供 Qt 不解析字符串直接渲染列表）
+    const std::vector<ShopItem>& GetShopItems() const;
+
     // 购买物品
     std::stringstream BuyItem(std::shared_ptr<Character> player, int itemIndex);
 

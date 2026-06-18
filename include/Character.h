@@ -28,8 +28,8 @@ private:
     std::shared_ptr<Equipment> equippedFeet;
     std::shared_ptr<Equipment> equippedWeapon;
 
-    std::atomic<int> buffAtk{0};
-    std::atomic<float> foodTimer{0.0f};
+    int foodBuffAtk       = 0;  // 当前食物攻击 buff 值
+    int foodBuffRoundsLeft = 0;  // 食物 buff 剩余回合数
 
 public:
     Character() = default;
@@ -37,7 +37,8 @@ public:
 
     explicit Character(std::string name);
 
-    void ConsumeFood(const Food& food);
+    // 吃食物：设置回合制 buff（默认 3 回合）
+    void ConsumeFood(const Food& food, int rounds = 3);
 
     // ── 基础属性访问 ──────────────────────────
     std::string GetName() const;
@@ -53,6 +54,16 @@ public:
     void AddAttack(int amount);         // 永久增加攻击力
     void AddDefense(int amount);        // 永久增加防御力
 
+    // ── 食物 Buff 回合推进 ───────────────────
+    // 每个回合结束时调用一次；buff 归零时自动清除
+    void TickFoodBuff();
+
+    // ── 纯数据 Get（供 Qt MVC 层使用）────────
+    double GetDodgeRate()       const;  // 闪避率
+    int    GetStaggerPoint()    const;  // 玩家破韧值
+    int    GetFoodBuffAtk()     const;  // 当前食物攻击加成（0=无 buff）
+    int    GetFoodBuffRoundsLeft() const; // 食物 buff 剩余回合数
+
     // ── 经验 & 升级 ──────────────────────────
     int  GetLevel() const;
     int  GetExp() const;
@@ -61,8 +72,10 @@ public:
     bool LevelUp();                     // 手动触发升级，成功返回 true
 
     int GetGold() const;
+    void AddGold(int amount);       // 增加金币（战斗奖励、捕获掉落等）
     bool SpendGold(int amount);
     Backpack& GetBackpack();
+    const Backpack& GetBackpack() const;  // const 重载，供 const 语境调用
 
     void EquipItem(std::shared_ptr<Equipment> equip);
     void UnequipItem(EquipSlot slot);

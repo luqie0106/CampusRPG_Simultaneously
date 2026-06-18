@@ -36,6 +36,7 @@ std::string Enemy::DisplayStatus() const {
 
 // ── 基础属性 ──────────────────────────────────────────────────────
 int  Enemy::GetHealth()  const { return health; }
+std::string Enemy::GetName() const { return name; }
 int  Enemy::GetAttack()  const { return attack; }
 int  Enemy::GetDefense() const { return defense; }
 int  Enemy::GetExp()     const { return exp; }
@@ -89,7 +90,7 @@ std::string Enemy::Attack(Character& target) {
 
     std::stringstream ss;
     ss << name << " 攻击了 " << target.GetName() << " 的 " << partName 
-       << "，造成了 " << actualDamage << " 点伤害！";
+       << "，造成了 " << actualDamage << " 点伤害";
 
     if (partArmor) {
         int durLoss = 0;

@@ -28,6 +28,7 @@ class Enemy {
         std::string DisplayStatus() const;
 
         int  GetHealth() const;
+        std::string GetName() const;  // 故人名称（供 Qt 直接显示品属标签）
         bool IsStaggered() const;
         bool TickStagger();
         void TakeDamage(int damage);
