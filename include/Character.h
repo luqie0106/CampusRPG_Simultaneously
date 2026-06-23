@@ -2,6 +2,7 @@
 #include "Backpack.h"
 #include "Item.h"
 #include "Common.h"
+#include "StatusEffect.h"
 
 // 职业枚举（供 Qt MVC 层查询，不需解析字符串）
 enum class CharacterClass {
@@ -39,6 +40,9 @@ private:
     int foodBuffAtk       = 0;  // 当前食物攻击 buff 值
     int foodBuffRoundsLeft = 0;  // 食物 buff 剩余回合数
 
+    // 状态效果列表（生命恢复、凋零、中毒等）
+    std::vector<StatusEffect> m_effects;
+
 public:
     Character() = default;
     Character(std::string name, int health, int attack, int defense, int gold,
@@ -72,11 +76,28 @@ public:
     // 每个回合结束时调用一次；buff 归零时自动清除
     void TickFoodBuff();
 
-    // ── 纯数据 Get（供 Qt MVC 层使用）────────
+    // ── 纯数据 Get（供 Qt MVC 层使用）────
     double GetDodgeRate()       const;  // 闪避率
     int    GetStaggerPoint()    const;  // 玩家破韧值
     int    GetFoodBuffAtk()     const;  // 当前食物攻击加成（0=无 buff）
     int    GetFoodBuffRoundsLeft() const; // 食物 buff 剩余回合数
+
+    // ── 状态效果 ──────────────────
+    // 添加一个状态效果（相同类型的效果会覆盖旧的）
+    void AddStatusEffect(StatusEffect effect);
+    // 每回合开始时调用一次：执行 HP 增减、属性修改，并递减剩余回合
+    // 返回本回合状态效果的文字描述（为空则表示无活跃效果）
+    std::string TickStatusEffects();
+    // 返回当前全部状态效果的文字列表（供战斗界面显示）
+    std::string GetStatusEffectText() const;
+    // 返回 Weakness 效果导致的攻击力惩罚和（供 GetAttack() 扣除）
+    int GetStatusAtkPenalty() const;
+    // 返回是否处于 Slow 状态（下一次攻击伤害减半）
+    bool HasSlow() const;
+    // 返回是否处于 Blind 状态（闪避率归零）
+    bool HasBlind() const;
+    // Slow 状态在攻击后需要消除（一次性）
+    void ClearSlow();
 
     // ── 经验 & 升级 ──────────────────────────
     int  GetLevel() const;

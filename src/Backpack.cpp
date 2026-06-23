@@ -44,12 +44,19 @@ std::string Backpack::UseItem(int index, Character& player) {
             ss << "  生命值已满，无法恢复更多。\n";
         }
 
-        // 调用 ConsumeFood 激活限时 Buff（异步计时器在 Character 内部管理）
-        player.ConsumeFood(*food);
+        // 调用 ConsumeFood 激活限时 Buff
+        player.ConsumeFood(*food, food->GetDuration());
         if (food->GetAtkBuff() > 0 || food->GetDefBuff() > 0) {
             ss << "  获得料理增益：攻击力+" << food->GetAtkBuff()
                << " 防御力+" << food->GetDefBuff()
-               << "，持续 " << food->GetDuration() << " 秒\n";
+               << "，持续 " << food->GetDuration() << " 回合\n";
+        }
+
+        // 附加状态效果（如金苹果的生命恢复）
+        if (food->GetEffectType() != StatusEffectType::None) {
+            StatusEffect eff(food->GetEffectType(), food->GetEffectValue(), food->GetDuration());
+            player.AddStatusEffect(eff);
+            ss << "  附加效果：" << eff.GetDescription() << "\n";
         }
 
     // ── Medicine：永久恢复 HP ─────────────────────────────────────────────

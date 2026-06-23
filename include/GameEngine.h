@@ -104,6 +104,10 @@ public:
     // 返回本回合完整的结算文本。
     std::string BattlePlayerAttack();
 
+    // 玩家回合前使用背包中的物品（不消耗行动机会，不触发敌人回合）
+    // 返回物品使用结果文本；UI 层可将其再次展示战斗选项
+    std::string BattleUseItemBeforeAction(int itemIndex);
+
     // 玩家在战斗中使用背包物品（1-based 索引），之后触发敌人反击。
     // 返回本回合完整的结算文本。
     std::string BattlePlayerUseItem(int itemIndex);

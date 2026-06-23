@@ -1,5 +1,6 @@
 #include "../include/GameEngine.h"
 #include "../include/Exceptions.h"
+#include "../include/RNG.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 构造 / 析构
@@ -16,6 +17,7 @@ GameEngine::~GameEngine() {}
 
 std::string GameEngine::Init() {
     m_state = GameState::MainMenu;
+    RNG::Init(); // 程序启动时初始化全局 mt19937 种子
     return "游戏引擎初始化完成。\n";
 }
 
@@ -319,6 +321,20 @@ std::string GameEngine::_EnemyTurn() {
 
     std::stringstream ss;
 
+    // 玩家回合开始：先处理玩家身上的状态效果（凋零/中毒/生命回复等）
+    std::string effectText = m_player->TickStatusEffects();
+    if (!effectText.empty()) {
+        ss << "\n【回合开始 - 状态效果】\n" << effectText;
+        // 检查玩家是否因状态效果死亡
+        if (m_player->GetHealth() <= 0) {
+            m_inBattle     = false;
+            m_currentEnemy = std::nullopt;
+            m_state        = GameState::GameOver;
+            ss << "\n💀 状态效果导致你倒下！游戏结束。\n";
+            return ss.str();
+        }
+    }
+
     // 食物 buff 回合推进（每回合敌人出招前计一次）
     if (m_player) m_player->TickFoodBuff();
 
@@ -387,10 +403,23 @@ std::string GameEngine::BattlePlayerAttack() {
     std::stringstream ss;
     ss << "【玩家回合 - 攻击】\n";
 
+    // 显示当前状态效果（如果有）
+    std::string statusText = m_player->GetStatusEffectText();
+    if (statusText != "无异常状态\n") {
+        ss << "玩家当前状态：" << statusText;
+    }
+
     // 计算伤害：玩家攻击 - 敌人防御，最低 1 点
-    int rawAtk    = m_player->GetAttack();
+    int rawAtk    = m_player->GetAttack(); // 已内含 Weakness 惩罚
     int enemyDef  = m_currentEnemy->GetDefense();
     int damage    = std::max(1, rawAtk - enemyDef);
+
+    // Slow 状态：伤害减半（一次性）
+    if (m_player->HasSlow()) {
+        damage = std::max(1, damage / 2);
+        ss << "🐢 《迟缓》状态导致这次攻击伤害已减半！\n";
+        m_player->ClearSlow();
+    }
 
     m_currentEnemy->TakeDamage(damage);
 
@@ -435,6 +464,30 @@ std::string GameEngine::BattlePlayerUseItem(int itemIndex) {
 
     // 触发敌人回合
     ss << _EnemyTurn();
+    return ss.str();
+}
+
+// 玩家回合前使用物品（不消耗行动次数，不触发敌人回合）
+std::string GameEngine::BattleUseItemBeforeAction(int itemIndex) {
+    if (m_state != GameState::Battle || !m_player) {
+        return "错误：当前不在战斗状态。\n";
+    }
+
+    std::stringstream ss;
+    ss << "【战斗前使用物品】\n";
+
+    try {
+        std::string useResult = m_player->GetBackpack().UseItem(itemIndex, *m_player);
+        ss << useResult << "\n";
+    } catch (const std::exception& e) {
+        ss << "使用失败：" << e.what() << "\n";
+    }
+
+    // 显示当前玩家状态，便于 UI 刷新
+    ss << "当前生命值：" << m_player->GetHealth()
+       << "/" << m_player->GetMaxHealth() << "\n";
+    ss << m_player->GetStatusEffectText();
+    ss << "\n请选择行动：[攻击] [继续使用物品] [P] 逃跑\n";
     return ss.str();
 }
 

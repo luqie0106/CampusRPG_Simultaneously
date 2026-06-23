@@ -1,14 +1,17 @@
 #include "../include/Enemy.h"
 #include "../include/Character.h"
-#include <random>
+#include "../include/RNG.h"
 #include <cmath>
 
 // maxStaggerPoints 传 0 即为无韧度小怪；staggerDuration 为 Boss 瘫痪回合数
 Enemy::Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
-    int maxStaggerPoints, int staggerDuration) :
+    int maxStaggerPoints, int staggerDuration,
+    StatusEffectType debuffType, int debuffChance, int debuffValue, int debuffDuration) :
 name(name), health(health), attack(attack), defense(defense), exp(exp), gold(gold),
 maxStaggerPoints(maxStaggerPoints), currentStaggerPoints(maxStaggerPoints),
-staggerDuration(staggerDuration), isStaggered(false), staggerRoundsLeft(0) {}
+staggerDuration(staggerDuration), isStaggered(false), staggerRoundsLeft(0),
+m_debuffType(debuffType), m_debuffChance(debuffChance),
+m_debuffValue(debuffValue), m_debuffDuration(debuffDuration) {}
 
 // ── 状态显示 ──────────────────────────────────────────────────────
 std::string Enemy::DisplayStatus() const {
@@ -53,10 +56,8 @@ std::string Enemy::Attack(Character& target) {
         return name + " 处于瘫痪状态，无法攻击！\n";
     }
 
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dis(1, 100);
-    int roll = dis(gen);
+    // 部位抽取：用全局 RNG 替换原来的局部 mt19937
+    int roll = RNG::RandInt(1, 100);
 
     EquipSlot targetSlot;
     std::string partName;
@@ -108,6 +109,19 @@ std::string Enemy::Attack(Character& target) {
         }
     }
     ss << "\n";
+
+    // ══ Boss 专属：概率触发负面状态效果 ══
+    if (IsBoss() && m_debuffType != StatusEffectType::None && m_debuffChance > 0) {
+        int debuffRoll = RNG::RandInt(1, 100);
+        if (debuffRoll <= m_debuffChance) {
+            StatusEffect debuff(m_debuffType, m_debuffValue, m_debuffDuration);
+            target.AddStatusEffect(debuff);
+            ss << "⚡ " << name << " 将《" << debuff.GetName()
+               << "》施加给了 " << target.GetName()
+               << "！（" << debuff.GetDescription() << "）\n";
+        }
+    }
+
     return ss.str();
 }
 
@@ -136,6 +150,8 @@ void Enemy::TakeToughnessDamage(int toughnessDamage) {
         staggerRoundsLeft    = staggerDuration; // 使用各自配置的回合数
     }
 }
+
+bool Enemy::IsBoss() const { return maxStaggerPoints > 0; }
 
 // ═══════════════════════════════════════════════════════════════════
 // 小怪工厂（maxStaggerPoints = 0，无韧度条）
@@ -168,16 +184,19 @@ Enemy Enemy::GangMember() {
 
 // 教导主任：雷厉风行，但只要破韧就能让他停顿一拍（1 回合）
 Enemy Enemy::DeanOfStudents() {
-    //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪回合
-    return Enemy("教导主任",        4000,   8,  4,  30,  50,   20,  1);
+    //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪  debuffType                  概率  每回合量  回合
+    return Enemy("教导主任",        4000,   8,  4,  30,  50,   20,   1,
+                 StatusEffectType::Wither,   40,   5,          2);
 }
 
 // 体育委员长：力量型 Boss，体力充沛；破韧后喘息 2 回合
 Enemy Enemy::PECommittee() {
-    return Enemy("体育委员长",      6500,  12,  6,  55,  80,   30,  2);
+    return Enemy("体育委员长",      6500,  12,  6,  55,  80,   30,   2,
+                 StatusEffectType::Weakness, 60,   8,          2);
 }
 
 // 校长：终极 Boss，防御极高；破韧后陷入长达 3 回合的混乱
 Enemy Enemy::Principal() {
-    return Enemy("校长",           10000,  18, 10, 100, 200,   50,  3);
+    return Enemy("校长",           10000,  18, 10, 100, 200,   50,   3,
+                 StatusEffectType::Poison,   75,   8,          3);
 }

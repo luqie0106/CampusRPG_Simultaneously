@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Common.h"
+#include "StatusEffect.h"
+#include "RNG.h"
 
 class Character;
 
@@ -18,12 +20,20 @@ class Enemy {
         bool isStaggered;
         int staggerRoundsLeft;
 
+        // Boss 专属负面状态效果配置（小怪匹配项均为 0/None）
+        StatusEffectType m_debuffType     = StatusEffectType::None;
+        int              m_debuffChance   = 0;   // 触发概率（整数百分毒，30–80）
+        int              m_debuffValue    = 0;   // debuff 每回合效果量
+        int              m_debuffDuration = 0;   // 持续回合数（1–3）
+
     public:
         // 基础构造函数
         // 小怪：staggerDuration = 0，maxStaggerPoints = 0
         // Boss：传入具体数值
         Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
-              int maxStaggerPoints, int staggerDuration = 0);
+              int maxStaggerPoints, int staggerDuration = 0,
+              StatusEffectType debuffType = StatusEffectType::None,
+              int debuffChance = 0, int debuffValue = 0, int debuffDuration = 0);
 
         std::string DisplayStatus() const;
 
@@ -38,6 +48,7 @@ class Enemy {
         int  GetDefense() const;
         int  GetExp() const;
         int  GetGold() const;
+        bool IsBoss() const;  // maxStaggerPoints > 0 即为 Boss
 
         // ========== 小怪工厂 ==========
         static Enemy Bully();           // 校园混混

@@ -42,11 +42,12 @@ int Character::GetMaxHealth() const { return maxHealth; }
 int Character::GetAttack() const { 
     int totalAtk = attack + foodBuffAtk;  // 加上当前食物 buff
     if (equippedWeapon) totalAtk += equippedWeapon->GetAttackBonus();
-    if (equippedHead) totalAtk += equippedHead->GetAttackBonus();
-    if (equippedBody) totalAtk += equippedBody->GetAttackBonus();
-    if (equippedLegs) totalAtk += equippedLegs->GetAttackBonus();
-    if (equippedFeet) totalAtk += equippedFeet->GetAttackBonus();
-    return totalAtk; 
+    if (equippedHead)   totalAtk += equippedHead->GetAttackBonus();
+    if (equippedBody)   totalAtk += equippedBody->GetAttackBonus();
+    if (equippedLegs)   totalAtk += equippedLegs->GetAttackBonus();
+    if (equippedFeet)   totalAtk += equippedFeet->GetAttackBonus();
+    totalAtk -= GetStatusAtkPenalty(); // 扣除 Weakness 造成的攻击力惩罚
+    return std::max(1, totalAtk); // 最少0，保证攻击力不负
 }
 int Character::GetDefense() const { 
     int totalDef = defense;
@@ -122,11 +123,122 @@ void Character::TickFoodBuff() {
     }
 }
 
-// ── 纯数据 Get（供 Qt MVC 层使用） ─────────────────────────────────
-double Character::GetDodgeRate()    const { return dodge_rate; }
-int    Character::GetStaggerPoint() const { return StaggerPoint; }
-int    Character::GetFoodBuffAtk()  const { return foodBuffAtk; }
+// ── 纯数据 Get（供 Qt MVC 层使用） ───────────────────────────────────
+// Blind 状态下闪避率强制归零
+double Character::GetDodgeRate() const {
+    if (HasBlind()) return 0.0;
+    return dodge_rate;
+}
+int    Character::GetStaggerPoint()      const { return StaggerPoint; }
+int    Character::GetFoodBuffAtk()       const { return foodBuffAtk; }
 int    Character::GetFoodBuffRoundsLeft() const { return foodBuffRoundsLeft; }
+
+// ── 状态效果 ────────────────────────────────────────────────────────────
+
+void Character::AddStatusEffect(StatusEffect effect) {
+    // 如果已有相同类型的效果，用新的覆盖旧的（重设计时）
+    for (auto& e : m_effects) {
+        if (e.type == effect.type) {
+            e = effect;
+            return;
+        }
+    }
+    m_effects.push_back(effect);
+}
+
+std::string Character::TickStatusEffects() {
+    if (m_effects.empty()) return "";
+
+    std::stringstream ss;
+    std::vector<StatusEffect> remaining;
+
+    for (auto& e : m_effects) {
+        switch (e.type) {
+            case StatusEffectType::HpRegen: {
+                int before = health;
+                HealHp(e.value);
+                int actual = health - before;
+                ss << "❤️ 《生命恢复》恢复了 " << actual << " 点HP（"
+                   << health << "/" << maxHealth << "）\n";
+                break;
+            }
+            case StatusEffectType::Wither:
+                TakeDamage(e.value);
+                ss << "🖤 《凋零》小啷损失了 " << e.value << " 点HP（"
+                   << health << "/" << maxHealth << "）\n";
+                break;
+            case StatusEffectType::Poison:
+                TakeDamage(e.value);
+                ss << "💚 《中毒》小啷损失了 " << e.value << " 点HP（"
+                   << health << "/" << maxHealth << "）\n";
+                break;
+            case StatusEffectType::Weakness:
+                ss << "💪 《虚弱》攻击力降低 " << e.value << " 点（剩 "
+                   << (e.roundsLeft - 1) << " 回合）\n";
+                break;
+            case StatusEffectType::Slow:
+                ss << "🐢 《迟缓》本次攻击伤害将减半（剩 "
+                   << (e.roundsLeft - 1) << " 回合）\n";
+                break;
+            case StatusEffectType::Blind:
+                ss << "👁️ 《失明》闪避率归零（剩 "
+                   << (e.roundsLeft - 1) << " 回合）\n";
+                break;
+            default: break;
+        }
+
+        --e.roundsLeft;
+        if (e.roundsLeft > 0) {
+            remaining.push_back(e);
+        } else {
+            ss << "✨ 《" << e.GetName() << "》效果已结束。\n";
+        }
+    }
+
+    m_effects = std::move(remaining);
+    return ss.str();
+}
+
+std::string Character::GetStatusEffectText() const {
+    if (m_effects.empty()) return "无异常状态\n";
+    std::stringstream ss;
+    for (const auto& e : m_effects) {
+        ss << e.GetDescription() << "\n";
+    }
+    return ss.str();
+}
+
+int Character::GetStatusAtkPenalty() const {
+    int penalty = 0;
+    for (const auto& e : m_effects) {
+        if (e.type == StatusEffectType::Weakness) {
+            penalty += e.value;
+        }
+    }
+    return penalty;
+}
+
+bool Character::HasSlow() const {
+    for (const auto& e : m_effects) {
+        if (e.type == StatusEffectType::Slow) return true;
+    }
+    return false;
+}
+
+bool Character::HasBlind() const {
+    for (const auto& e : m_effects) {
+        if (e.type == StatusEffectType::Blind) return true;
+    }
+    return false;
+}
+
+void Character::ClearSlow() {
+    m_effects.erase(
+        std::remove_if(m_effects.begin(), m_effects.end(),
+                       [](const StatusEffect& e){ return e.type == StatusEffectType::Slow; }),
+        m_effects.end()
+    );
+}
 
 // ── 经验 & 升级 ───────────────────────────────────────────────────
 

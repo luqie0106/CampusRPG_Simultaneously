@@ -15,17 +15,28 @@ std::stringstream Item::Show() const {
     return ss;
 }
 
-Food::Food(std::string name, int value, int HpRecovery, int AtkBuff, int DefBuff, int Duration) : 
-    Item(name, value), HpRecovery(HpRecovery), AtkBuff(AtkBuff), DefBuff(DefBuff), Duration(Duration) {}
+Food::Food(std::string name, int value, int HpRecovery, int AtkBuff, int DefBuff,
+           int Duration, StatusEffectType effectType, int effectValue)
+    : Item(name, value), HpRecovery(HpRecovery), AtkBuff(AtkBuff), DefBuff(DefBuff),
+      Duration(Duration), effectType(effectType), effectValue(effectValue) {}
 
 int Food::GetHpRecovery() const { return HpRecovery; }
-int Food::GetAtkBuff() const { return AtkBuff; }
-int Food::GetDefBuff() const { return DefBuff; }
-int Food::GetDuration() const { return Duration; }
+int Food::GetAtkBuff()    const { return AtkBuff; }
+int Food::GetDefBuff()    const { return DefBuff; }
+int Food::GetDuration()   const { return Duration; }
+StatusEffectType Food::GetEffectType()  const { return effectType;  }
+int              Food::GetEffectValue() const { return effectValue; }
 
 std::stringstream Food::Show() const {
     std::stringstream ss;
-    ss << "【食物】" << getName() << " | 效果: 恢复 " << HpRecovery << " 点生命值";
+    ss << "[食物]" << getName() << " | 即时回血 " << HpRecovery;
+    if (AtkBuff > 0) ss << " 攻击+" << AtkBuff;
+    if (DefBuff > 0) ss << " 防御+" << DefBuff;
+    ss << "  持续 " << Duration << " 回合";
+    if (effectType != StatusEffectType::None) {
+        StatusEffect tmp(effectType, effectValue, Duration);
+        ss << " | 附加效果: " << tmp.GetName();
+    }
     return ss;
 }
 
@@ -61,23 +72,24 @@ std::stringstream Equipment::Show() const {
 
 // ========== Food 工厂 ==========
 std::shared_ptr<Food> Food::GoldenApple() {
-    // 金苹果: 恢复4颗心(8HP).       name    value   HpRecovery  AtkBuff  DefBuff  Duration
-    return std::make_shared<Food>("金苹果", 40,      8,            5,       10,       5);
+    // 金苹果：即时回8HP + ATK+5，2回合 + HpRegen(每回合+3)
+    //                   name   value HpRec AtkBuf DefBuf Dur    effectType           effectVal
+    return std::make_shared<Food>("金苹果", 40, 8, 5, 10, 2, StatusEffectType::HpRegen, 3);
 }
 
 std::shared_ptr<Food> Food::EnchantedGoldenApple() {
-    // 附魔金苹果: 恢复4颗心, 强力再生和吸收
-    return std::make_shared<Food>("附魔金苹果", 120,     20,     15,          25,       8);
+    // 附魔金苹果：即时回20HP + ATK+15，3回合 + HpRegen(每回合+8)
+    return std::make_shared<Food>("附魔金苹果", 120, 20, 15, 25, 3, StatusEffectType::HpRegen, 8);
 }
 
 std::shared_ptr<Food> Food::Steak() {
-    // 熟牛肉: 恢复8点饥饿, 少量攻击buff
-    return std::make_shared<Food>("熟牛排", 12,      15,          3,          0,        3);
+    // 熟牛排：即时回15HP + ATK+3，3回合，无附加状态效果
+    return std::make_shared<Food>("熟牛排", 12, 15, 3, 0, 3);
 }
 
 std::shared_ptr<Food> Food::Pork() {
-    // 猪排: 恢复8点饥饿, 少量攻击buff
-    return std::make_shared<Food>("猪排", 16,      10,          2,          1,        3);
+    // 猪排：即时回10HP + ATK+2 DEF+1，3回合，无附加状态效果
+    return std::make_shared<Food>("猪排", 16, 10, 2, 1, 3);
 }
 
 // ========== Medicine 工厂 ==========
