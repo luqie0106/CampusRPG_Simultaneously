@@ -69,12 +69,22 @@ void Character::TakeDamage(int damage) {
 void Character::EquipItem(std::shared_ptr<Equipment> equip) {
     if (!equip) return;
     EquipSlot slot = equip->GetSlot();
+
+    // 辅助 lambda：如果该槽有旧装备，先归还到背包再覆盖
+    auto returnOldToBackpack = [&](std::shared_ptr<Equipment>& currentSlot) {
+        if (currentSlot) {
+            // shared_ptr<Equipment> → unique_ptr<Equipment>（拷贝构造克隆一份）
+            backpack.AddItem(std::make_unique<Equipment>(*currentSlot));
+        }
+        currentSlot = equip;
+    };
+
     switch (slot) {
-        case EquipSlot::Head: equippedHead = equip; break;
-        case EquipSlot::Body: equippedBody = equip; break;
-        case EquipSlot::Legs: equippedLegs = equip; break;
-        case EquipSlot::Feet: equippedFeet = equip; break;
-        case EquipSlot::Weapon: equippedWeapon = equip; break;
+        case EquipSlot::Head:   returnOldToBackpack(equippedHead);   break;
+        case EquipSlot::Body:   returnOldToBackpack(equippedBody);   break;
+        case EquipSlot::Legs:   returnOldToBackpack(equippedLegs);   break;
+        case EquipSlot::Feet:   returnOldToBackpack(equippedFeet);   break;
+        case EquipSlot::Weapon: returnOldToBackpack(equippedWeapon); break;
         default: break;
     }
 }
@@ -236,6 +246,21 @@ void Character::ClearSlow() {
     m_effects.erase(
         std::remove_if(m_effects.begin(), m_effects.end(),
                        [](const StatusEffect& e){ return e.type == StatusEffectType::Slow; }),
+        m_effects.end()
+    );
+}
+
+void Character::ClearNegativeEffects() {
+    // 保留 HpRegen 等正面效果；移除所有负面效果
+    m_effects.erase(
+        std::remove_if(m_effects.begin(), m_effects.end(),
+            [](const StatusEffect& e) {
+                return e.type == StatusEffectType::Poison   ||
+                       e.type == StatusEffectType::Wither   ||
+                       e.type == StatusEffectType::Weakness ||
+                       e.type == StatusEffectType::Slow     ||
+                       e.type == StatusEffectType::Blind;
+            }),
         m_effects.end()
     );
 }

@@ -325,12 +325,16 @@ std::string GameEngine::_EnemyTurn() {
     std::string effectText = m_player->TickStatusEffects();
     if (!effectText.empty()) {
         ss << "\n【回合开始 - 状态效果】\n" << effectText;
-        // 检查玩家是否因状态效果死亡
+        // 检查玩家是否因状态效果「死亡」→ 送往校医务室复活
         if (m_player->GetHealth() <= 0) {
             m_inBattle     = false;
             m_currentEnemy = std::nullopt;
-            m_state        = GameState::GameOver;
-            ss << "\n💀 状态效果导致你倒下！游戏结束。\n";
+            m_state        = GameState::InGame;   // 返回游戏内，不进入 GameOver
+            // 复活：血量回满，清除负面状态
+            m_player->HealHp(m_player->GetMaxHealth());
+            m_player->ClearNegativeEffects();
+            ss << "\n💀 状态效果导致你倒下！眼前一黑...\n"
+               << "🏥 你在校医务室的病床上醒来，并且恢复了全部状态！\n";
             return ss.str();
         }
     }
@@ -338,10 +342,10 @@ std::string GameEngine::_EnemyTurn() {
     // 食物 buff 回合推进（每回合敌人出招前计一次）
     if (m_player) m_player->TickFoodBuff();
 
-    // 每回合开始先 tick 瘫痪计时
-    bool stillStaggered = m_currentEnemy->TickStagger();
-
-    if (stillStaggered || m_currentEnemy->IsStaggered()) {
+    // ── Bug3 修复：先用 IsStaggered() 决定本回合是否跳过攻击 ──────────
+    // TickStagger() 统一移到回合末尾执行，避免 Off-by-one：
+    // 若在回合开始先 Tick，瘫痪1回合会立即归零并解除，Boss 紧接着发起攻击。
+    if (m_currentEnemy->IsStaggered()) {
         // 瘫痪中：敌人跳过本回合
         ss << m_currentEnemy->DisplayStatus().substr(
                m_currentEnemy->DisplayStatus().find("名字：")); // 截取名字行作前缀
@@ -351,17 +355,26 @@ std::string GameEngine::_EnemyTurn() {
         ss << "\n【敌人回合】\n";
         ss << m_currentEnemy->Attack(*m_player);
 
-        // 检查玩家是否死亡
+        // 检查玩家是否「死亡」→ 送往校医务室复活
         if (m_player->GetHealth() <= 0) {
             m_inBattle     = false;
             m_currentEnemy = std::nullopt;
-            m_state        = GameState::GameOver;
-            ss << "\n💀 你被击败了！游戏结束。\n";
+            m_state        = GameState::InGame;   // 返回游戏内，不进入 GameOver
+            // 复活：血量回满，清除负面状态（等级/经验/金币/背包全部保留）
+            m_player->HealHp(m_player->GetMaxHealth());
+            m_player->ClearNegativeEffects();
+            ss << "\n💀 你被击败了！眼前一黑...\n"
+               << "🏥 你在校医务室的病床上醒来，并且恢复了全部状态！\n";
+            return ss.str();
         } else {
             ss << "你的生命值：" << m_player->GetHealth()
                << "/" << m_player->GetMaxHealth() << "\n";
         }
     }
+
+    // 回合末尾统一递减瘫痪计时（无论本回合是否攻击）
+    m_currentEnemy->TickStagger();
+
     return ss.str();
 }
 
@@ -428,6 +441,16 @@ std::string GameEngine::BattlePlayerAttack() {
 
     ss << m_player->GetName() << " 攻击了敌人，造成 " << damage << " 点伤害！\n";
     ss << "敌人剩余生命值：" << m_currentEnemy->GetHealth() << "\n";
+
+    // ── Bug2 修复：扣减武器耐久度 ─────────────────────────────────────
+    auto weapon = m_player->GetEquipmentAt(EquipSlot::Weapon);
+    if (weapon) {
+        weapon->ReduceDurability(1);
+        if (weapon->GetDurability() <= 0) {
+            ss << "⚠️ 【" << weapon->getName() << "】已损坏！\n";
+            m_player->UnequipItem(EquipSlot::Weapon);
+        }
+    }
 
     // 检查敌人是否死亡
     if (m_currentEnemy->GetHealth() <= 0) {

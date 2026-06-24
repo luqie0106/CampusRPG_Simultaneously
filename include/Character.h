@@ -98,6 +98,9 @@ public:
     bool HasBlind() const;
     // Slow 状态在攻击后需要消除（一次性）
     void ClearSlow();
+    // 清除所有负面状态效果（Poison/Wither/Weakness/Slow/Blind）
+    // 复活时调用，保留 HpRegen 等正面效果
+    void ClearNegativeEffects();
 
     // ── 经验 & 升级 ──────────────────────────
     int  GetLevel() const;
