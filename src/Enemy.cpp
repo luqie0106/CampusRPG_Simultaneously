@@ -185,18 +185,18 @@ Enemy Enemy::GangMember() {
 // 教导主任：雷厉风行，但只要破韧就能让他停顿一拍（1 回合）
 Enemy Enemy::DeanOfStudents() {
     //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪  debuffType                  概率  每回合量  回合
-    return Enemy("教导主任",        4000,   8,  4,  30,  50,   20,   1,
+    return Enemy("教导主任",         500,  25,  4,  30,  50,    5,   1,
                  StatusEffectType::Wither,   40,   5,          2);
 }
 
 // 体育委员长：力量型 Boss，体力充沛；破韧后喘息 2 回合
 Enemy Enemy::PECommittee() {
-    return Enemy("体育委员长",      6500,  12,  6,  55,  80,   30,   2,
+    return Enemy("体育委员长",       800,  35,  6,  55,  80,    8,   2,
                  StatusEffectType::Weakness, 60,   8,          2);
 }
 
 // 校长：终极 Boss，防御极高；破韧后陷入长达 3 回合的混乱
 Enemy Enemy::Principal() {
-    return Enemy("校长",           10000,  18, 10, 100, 200,   50,   3,
+    return Enemy("校长",            1200,  45, 10, 100, 200,   12,   3,
                  StatusEffectType::Poison,   75,   8,          3);
 }
