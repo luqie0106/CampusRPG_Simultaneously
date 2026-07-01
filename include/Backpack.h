@@ -7,7 +7,7 @@ class Character;
 
 class Backpack {
 private:
-    // 整个大作业的核心：用基类智能指针的 vector 容纳所有派生类物品
+    //用基类智能指针的 vector 容纳所有派生类物品
     std::vector<std::unique_ptr<Item>> items; 
 
 public:

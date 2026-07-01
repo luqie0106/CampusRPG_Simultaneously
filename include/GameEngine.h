@@ -4,6 +4,7 @@
 #include "Enemy.h"
 #include "Shop.h"
 #include <optional>
+#include "WorldMap.h"
 
 // ─────────────────────────────────────────────
 // 游戏阶段枚举
@@ -160,6 +161,50 @@ public:
     bool        GetBattleEnemyIsStaggered() const;
     std::string GetBattleEnemyName()        const;
 
+    // ════════════════════════════════════════════
+    // 地图探索接口（Qt 地图渲染 & 主动交互）
+    // ════════════════════════════════════════════
+
+    // ── 【摄像机接口】玩家坐标 ───────────────────
+    // Qt 用来确定渲染中心：人物固定屏幕中央，地图随坐标偏移渲染。
+    GamePoint GetPlayerPos() const;
+
+    // ── 【视野接口】可视范围地图信息 ─────────────
+    // 返回以玩家为中心、上下左右各扩展 halfRadius 格的地图信息。
+    // 典型调用：GetVisibleMap(2) → 5×5 = 25 个格子
+    // 每个 MapTileInfo 含：世界坐标、地形类型、是否有实体及实体 id。
+    std::vector<MapTileInfo> GetVisibleMap(int halfRadius = 2) const;
+
+    // ── 【移动接口】驱动玩家在地图上移动 ──────────
+    // dx / dy 取值 -1、0、+1（上下左右各方向）。
+    // 内部含碰撞检测；仅在 InGame 状态下生效，返回是否移动成功。
+    bool MovePlayer(int dx, int dy);
+
+    // ── 【附近实体检测】主动交互前的检查函数 ──────
+    // 返回与玩家曼哈顿距离 ≤ radius 的全部可交互实体列表。
+    // Qt 调用此函数后决定是否弹出交互按钮，不会自动触发任何状态切换。
+    std::vector<InteractableInfo> CheckNearbyInteractables(int radius = 1) const;
+
+    // ── 【交互执行】玩家主动确认后的入口 ──────────
+    // 玩家点击 Qt 弹出按钮后调用，根据 type 和 targetId 触发状态机切换：
+    //   StartBattle → 调用 StartBattle()，状态切换到 Battle
+    //   EnterShop   → 调用 EnterShop()，状态切换到 Shop
+    //   TalkToNPC   → TODO（任务系统预留）
+    // 返回操作结果描述；成功时返回与对应 Enter* 函数相同的文本。
+    // targetId 对应 InteractableInfo::id。
+    std::string ExecuteInteraction(InteractionType type, int targetId);
+
+    // ── 【出生点重置】新游戏 / 读档后调用 ──────────
+    // CreatePlayer() 后 Qt 应调用此函数将玩家归位到出生坐标。
+    void ResetPlayerToSpawn();
+
+    // ── 【地图实体注册入口】供地图同学使用 ──────────
+    // 通过此函数向地图注册怪物 / 商店 / NPC 点位，不绕过引擎直接操作 WorldMap。
+    // 示例：
+    //   engine.AddMapInteractable(
+    //       InteractableInfo::MakeEnemy(1, {10,15}, "校园混混", Enemy::Bully()));
+    void AddMapInteractable(InteractableInfo info);
+
 private:
     GameState                   m_state;
     std::shared_ptr<Character>  m_player;
@@ -168,6 +213,11 @@ private:
     // ── 战斗状态 ──────────────────────────────
     std::optional<Enemy>        m_currentEnemy; // 当前交战的敌人副本
     bool                        m_inBattle = false;
+
+    // ── 地图系统 ──────────────────────────────────
+    // 持有世界地图（实体管理 + 玩家坐标）
+    // 地图尺寸 50×50，出生点 (25,25)；可通过 m_worldMap.SetSpawnPoint() 调整
+    WorldMap                    m_worldMap;
 
     // 内部辅助：执行敌人回合（若敌人存活且未瘫痪则反击）
     // 返回敌人回合的文本；同时处理玩家死亡 → GameOver

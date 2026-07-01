@@ -111,16 +111,16 @@ public:
 
     int GetGold() const;
     void AddGold(int amount);       // 增加金币（战斗奖励、捕获掉落等）
-    bool SpendGold(int amount);
+    bool SpendGold(int amount);     // 扣除金币
     Backpack& GetBackpack();
     const Backpack& GetBackpack() const;  // const 重载，供 const 语境调用
 
-    void EquipItem(std::shared_ptr<Equipment> equip);
-    void UnequipItem(EquipSlot slot);
-    std::shared_ptr<Equipment> GetEquipmentAt(EquipSlot slot);
-    void TakeDamage(int damage);
+    void EquipItem(std::shared_ptr<Equipment> equip); // 穿戴装备
+    void UnequipItem(EquipSlot slot); // 脱下装备
+    std::shared_ptr<Equipment> GetEquipmentAt(EquipSlot slot); // 获取指定位置的装备
+    void TakeDamage(int damage); // 受到伤害
 
-    std::stringstream DisplayStatus() const;
+    std::stringstream DisplayStatus() const; // 显示角色状态
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

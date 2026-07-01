@@ -46,7 +46,7 @@ void MapSystem::setTile(int x, int y, int type) {
     }
 }
 
-bool MapSystem::isWalkable(int tileX, int tileY) {
+bool MapSystem::isWalkable(int tileX, int tileY) const {
     if (tileX < 0 || tileX >= mapWidth || tileY < 0 || tileY >= mapHeight) return false;
     return mapData[tileY][tileX] == 0;
 }

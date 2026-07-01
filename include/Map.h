@@ -51,7 +51,7 @@ public:
 
     void setTile(int x, int y, int type);
 
-    bool isWalkable(int tileX, int tileY);
+    bool isWalkable(int tileX, int tileY) const;
 
     // ========================================================
     // 🌟 纯 STL 版 A* 寻路算法（完整实现）

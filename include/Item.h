@@ -43,10 +43,10 @@ class Food : public Item {
              StatusEffectType effectType  = StatusEffectType::None,
              int              effectValue = 0);
         ~Food() = default;
-        int GetHpRecovery() const;
-        int GetAtkBuff() const;
-        int GetDefBuff() const;
-        int GetDuration() const;
+        int GetHpRecovery() const; // 获取回血量
+        int GetAtkBuff() const; // 获取攻击力加成
+        int GetDefBuff() const; // 获取防御力加成
+        int GetDuration() const; // 获取持续时间
         StatusEffectType GetEffectType()  const;  // 附加状态效果类型（None = 无）
         int              GetEffectValue() const;  // 附加状态效果每回合量值
         std::stringstream Show() const override;

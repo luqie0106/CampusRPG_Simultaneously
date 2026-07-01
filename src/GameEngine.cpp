@@ -578,3 +578,90 @@ CharacterClass GameEngine::GetPlayerClass()     const {
 std::string GameEngine::GetPlayerClassName()    const {
     return m_player ? m_player->GetClassName() : "";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 地图探索接口实现
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 【摄像机接口】返回玩家当前世界格子坐标
+// Qt 以此为屏幕中心点，偏移渲染周围地图瓦片
+GamePoint GameEngine::GetPlayerPos() const {
+    return m_worldMap.GetPlayerPos();
+}
+
+// 【视野接口】返回以玩家为中心的 (2*halfRadius+1)^2 格地图信息
+// 包含地形类型（0=空地/1=障碍）和该格是否有可交互实体
+std::vector<MapTileInfo> GameEngine::GetVisibleMap(int halfRadius) const {
+    return m_worldMap.GetVisibleMap(halfRadius);
+}
+
+// 【移动接口】仅在 InGame 状态下允许移动
+// 内部调用 WorldMap::MovePlayer()，已含碰撞检测
+bool GameEngine::MovePlayer(int dx, int dy) {
+    if (m_state != GameState::InGame) {
+        return false;   // 战斗中 / 商店中 / 背包中均不允许移动
+    }
+    return m_worldMap.MovePlayer(dx, dy);
+}
+
+// 【附近实体检测】主动交互前的轮询函数
+// 返回与玩家曼哈顿距离 ≤ radius 的全部实体；Qt 据此决定是否弹出交互按钮
+std::vector<InteractableInfo> GameEngine::CheckNearbyInteractables(int radius) const {
+    return m_worldMap.CheckNearbyInteractables(radius);
+}
+
+// 【交互执行】玩家主动点击确认后的核心入口
+// 负责：查找目标实体 → 安全校验 → 驱动状态机切换
+std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
+    if (!m_player) {
+        return "错误：尚未创建角色。\n";
+    }
+    if (m_state != GameState::InGame) {
+        return "错误：只能在探索状态（InGame）下发起交互。\n";
+    }
+
+    const InteractableInfo* info = m_worldMap.GetInteractableById(targetId);
+    if (!info) {
+        return "错误：找不到目标实体（id=" + std::to_string(targetId) + "）。\n";
+    }
+
+    switch (type) {
+        case InteractionType::StartBattle: {
+            // 必须有绑定的敌人模板
+            if (!info->enemyTemplate.has_value()) {
+                return "错误：该实体未绑定敌人模板，无法开始战斗。\n";
+            }
+            // 战斗一旦触发，将实体从地图移除（战斗结束前不再显示为可交互）
+            // 若战斗胜利则永久移除；若逃跑则已消失（简化设计，可后续扩展为"重置"）
+            Enemy enemyCopy = info->enemyTemplate.value();
+            m_worldMap.RemoveInteractable(targetId);
+            return StartBattle(enemyCopy);
+        }
+
+        case InteractionType::EnterShop: {
+            // 直接复用已有商店接口，状态机切换到 Shop
+            return EnterShop();
+        }
+
+        case InteractionType::TalkToNPC: {
+            // TODO: 任务系统待设计，暂返回占位文本
+            // 后续接入 Task 系统后在此处驱动对话/任务逻辑
+            return "【" + info->displayName + "】：「同学，好久不见！」\n（任务系统开发中…）\n";
+        }
+
+        default:
+            return "错误：未知的交互类型。\n";
+    }
+}
+
+// 【出生点重置】新游戏开始 / 读档后调用
+// CreatePlayer() 成功后，Qt 应调用此函数将玩家归位到地图出生坐标
+void GameEngine::ResetPlayerToSpawn() {
+    m_worldMap.ResetPlayerToSpawn();
+}
+
+// 【地图实体注册入口】由地图同学在地图初始化阶段调用
+// 通过引擎统一注册，避免外部直接操作 WorldMap 内部状态
+void GameEngine::AddMapInteractable(InteractableInfo info) {
+    m_worldMap.AddInteractable(std::move(info));
+}

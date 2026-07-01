@@ -39,15 +39,15 @@ class Enemy {
 
         int  GetHealth() const;
         std::string GetName() const;  // 故人名称（供 Qt 直接显示品属标签）
-        bool IsStaggered() const;
-        bool TickStagger();
-        void TakeDamage(int damage);
-        void TakeToughnessDamage(int toughnessDamage);
-        std::string Attack(Character& target);
-        int  GetAttack() const;
-        int  GetDefense() const;
-        int  GetExp() const;
-        int  GetGold() const;
+        bool IsStaggered() const; // 是否处于瘫瘪状态
+        bool TickStagger(); // 瘫瘪状态回合推进
+        void TakeDamage(int damage); // 受到伤害
+        void TakeToughnessDamage(int toughnessDamage); // 受到破韧值伤害
+        std::string Attack(Character& target); // 攻击玩家
+        int  GetAttack() const; // 获取攻击力
+        int  GetDefense() const; // 获取防御力
+        int  GetExp() const; // 获取经验值
+        int  GetGold() const; // 获取金币
         bool IsBoss() const;  // maxStaggerPoints > 0 即为 Boss
 
         // ========== 小怪工厂 ==========
