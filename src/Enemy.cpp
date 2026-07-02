@@ -56,6 +56,13 @@ std::string Enemy::Attack(Character& target) {
         return name + " 处于瘫痪状态，无法攻击！\n";
     }
 
+    // ── 闪避判定（优先于部位抽取）────────────────────────────────
+    // RandInt(0, 99) / 100.0 ∈ [0.00, 0.99]，与 GetDodgeRate() ∈ [0.0, 0.95] 比较
+    double dodgeRoll = RNG::RandInt(0, 99) / 100.0;
+    if (dodgeRoll < target.GetDodgeRate()) {
+        return target.GetName() + " 闪避了攻击！\n";
+    }
+
     // 部位抽取：用全局 RNG 替换原来的局部 mt19937
     int roll = RNG::RandInt(1, 100);
 
@@ -160,7 +167,7 @@ bool Enemy::IsBoss() const { return maxStaggerPoints > 0; }
 // 校园混混：街头小霸王，喜欢在走廊游荡找人碰瓷
 Enemy Enemy::Bully() {
     //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪回合
-    return Enemy("校园混混",        180,   5,  1,   6,  10,    0,  0);
+    return Enemy("校园混混",        30,   8,  1,   6,  10,    0,  0);
 }
 
 // 逃课大神：行动飘忽，输出不高但极难预判

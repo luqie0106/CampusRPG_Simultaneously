@@ -38,6 +38,7 @@ private:
     std::shared_ptr<Equipment> equippedWeapon;
 
     int foodBuffAtk       = 0;  // 当前食物攻击 buff 值
+    int foodBuffDef       = 0;  // 当前食物防御 buff 值
     int foodBuffRoundsLeft = 0;  // 食物 buff 剩余回合数
 
     // 状态效果列表（生命恢复、凋零、中毒等）

@@ -81,11 +81,19 @@ std::stringstream Shop::BuyItem(std::shared_ptr<Character> player, int itemIndex
         
         std::unique_ptr<Item> newItem;
         if (auto food = std::dynamic_pointer_cast<Food>(shopItem.item)) {
-            newItem = std::make_unique<Food>(food->getName(), food->getValue(), food->GetHpRecovery(), food->GetAtkBuff(), food->GetDefBuff(), food->GetDuration());
+            newItem = std::make_unique<Food>(
+                food->getName(), food->getValue(),
+                food->GetHpRecovery(), food->GetAtkBuff(), food->GetDefBuff(),
+                food->GetDuration(),
+                food->GetEffectType(), food->GetEffectValue());   // ← 补上附加状态效果
         } else if (auto med = std::dynamic_pointer_cast<Medicine>(shopItem.item)) {
             newItem = std::make_unique<Medicine>(med->getName(), med->getValue(), med->GetHpRecovery());
         } else if (auto equip = std::dynamic_pointer_cast<Equipment>(shopItem.item)) {
-            newItem = std::make_unique<Equipment>(equip->getName(), equip->getValue(), equip->GetDefenseBonus(), equip->GetAttackBonus(), equip->GetDurability(), equip->GetSlot());
+            newItem = std::make_unique<Equipment>(
+                equip->getName(), equip->getValue(),
+                equip->GetDefenseBonus(), equip->GetAttackBonus(),
+                equip->GetDurability(), equip->GetSlot(),
+                equip->GetDodgeBonus());                          // ← 补上闪避加成
         } else {
             newItem = std::make_unique<Item>(shopItem.item->getName(), shopItem.item->getValue());
         }

@@ -128,8 +128,8 @@ std::shared_ptr<Equipment> Equipment::IronArmor() {
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenArmor() {
-    // 金甲: 防御+11但价值高, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("金甲", 100,       11,      2,           77, EquipSlot::Body);
+    // 金甲: 防御+11但价值高, 耐久300(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金甲", 100,       11,      2,          300, EquipSlot::Body);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondArmor() {
@@ -143,8 +143,8 @@ std::shared_ptr<Equipment> Equipment::IronSword() {
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenSword() {
-    // 金剑: 攻击+4但很贵, 耐久32(金很软)   name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("金剑", 80,       0,       15,           300, EquipSlot::Weapon);
+    // 金剑: 攻击+15但很贵, 耐久300(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金剑", 80,       0,       15,          300, EquipSlot::Weapon);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondSword() {
@@ -158,8 +158,8 @@ std::shared_ptr<Equipment> Equipment::IronHelmet() {
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenHelmet() {
-    // 金头盔: 防御+7, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("金头盔", 70,       7,        2,           77, EquipSlot::Head);
+    // 金头盔: 防御+7, 耐久300(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金头盔", 70,       7,        2,          300, EquipSlot::Head);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondHelmet() {
@@ -173,8 +173,8 @@ std::shared_ptr<Equipment> Equipment::IronLeggings() {
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenLeggings() {
-    // 金护腿: 防御+8, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("金护腿", 80,       8,        2,           77, EquipSlot::Legs);
+    // 金护腿: 防御+8, 耐久300(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金护腿", 80,       8,        2,          300, EquipSlot::Legs);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondLeggings() {
@@ -188,8 +188,8 @@ std::shared_ptr<Equipment> Equipment::IronBoots() {
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenBoots() {
-    // 金靴子: 防御+4, 耐久77(金很软)    name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("金靴子", 60,       4,        2,           77, EquipSlot::Feet);
+    // 金靴子: 防御+4, 耐久300(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金靴子", 60,       4,        2,          300, EquipSlot::Feet);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondBoots() {

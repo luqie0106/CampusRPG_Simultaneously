@@ -15,6 +15,7 @@ Character::Character(std::string name)
 void Character::ConsumeFood(const Food& food, int rounds) {
     // 如果已有 buff 就覆盖（重新开始计时）
     foodBuffAtk        = food.GetAtkBuff();
+    foodBuffDef        = food.GetDefBuff();   // ← 补充防御 buff
     foodBuffRoundsLeft = rounds;
     // HP 立即回复部分由 UseItem 那一层处理，这里只负责设置 buff
 }
@@ -50,12 +51,12 @@ int Character::GetAttack() const {
     return std::max(1, totalAtk); // 最少0，保证攻击力不负
 }
 int Character::GetDefense() const { 
-    int totalDef = defense;
+    int totalDef = defense + foodBuffDef;    // ← 加上食物防御 buff
     if (equippedWeapon) totalDef += equippedWeapon->GetDefenseBonus();
-    if (equippedHead) totalDef += equippedHead->GetDefenseBonus();
-    if (equippedBody) totalDef += equippedBody->GetDefenseBonus();
-    if (equippedLegs) totalDef += equippedLegs->GetDefenseBonus();
-    if (equippedFeet) totalDef += equippedFeet->GetDefenseBonus();
+    if (equippedHead)   totalDef += equippedHead->GetDefenseBonus();
+    if (equippedBody)   totalDef += equippedBody->GetDefenseBonus();
+    if (equippedLegs)   totalDef += equippedLegs->GetDefenseBonus();
+    if (equippedFeet)   totalDef += equippedFeet->GetDefenseBonus();
     return totalDef; 
 }
 int Character::GetBaseAttack() const { return attack; }
@@ -129,6 +130,7 @@ void Character::TickFoodBuff() {
     --foodBuffRoundsLeft;
     if (foodBuffRoundsLeft <= 0) {
         foodBuffAtk        = 0;
+        foodBuffDef        = 0;   // ← 防御 buff 一并归零
         foodBuffRoundsLeft = 0;
     }
 }
@@ -291,7 +293,7 @@ bool Character::LevelUp() {
     ++level;
     // 每级 +1 颗心 (HP_PER_LEVEL = 2)
     maxHealth += HP_PER_LEVEL;
-    health     = std::min(health + HP_PER_LEVEL, maxHealth); // 升级顺便回满这部分
+    health     = maxHealth;   // 升级直接回满血（奖励感更强）
     // 每级攻击 +2
     attack += ATK_PER_LEVEL;
     exp = 0;    // 重置本级经验
