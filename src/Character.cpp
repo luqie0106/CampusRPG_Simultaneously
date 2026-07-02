@@ -2,7 +2,7 @@
 #include "../include/Exceptions.h"
 
 Character::Character(std::string name, int health, int attack, int defense, int gold,
-                     double dodge_rate, int level, int StaggerPoint, CharacterClass cls)
+                     double dodge_rate, int level, double StaggerPoint, CharacterClass cls)
     : name(name), health(health), maxHealth(health), attack(attack), defense(defense),
       gold(gold), dodge_rate(dodge_rate), level(level), StaggerPoint(StaggerPoint),
       classType(cls) {}
@@ -152,7 +152,7 @@ double Character::GetDodgeRate() const {
     // 闪避率上限 95%（保留 5% 被命中概率，防止无敌）
     return std::min(total, 0.95);
 }
-int    Character::GetStaggerPoint()      const { return StaggerPoint; }
+double Character::GetStaggerPoint()      const { return StaggerPoint; }
 int    Character::GetFoodBuffAtk()       const { return foodBuffAtk; }
 int    Character::GetFoodBuffRoundsLeft() const { return foodBuffRoundsLeft; }
 
@@ -370,14 +370,17 @@ std::stringstream Character::DisplayStatus() const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 //               name   HP  ATK  DEF  Gold  Dodge   Lv  Stagger  Class
+//               普通学生: 均衡型，Stagger=1.5
 Steve::Steve(std::string name)
-    : Character(name,   20,  10,   5, 200, 0.12,   1,  10, CharacterClass::Student) {}
+    : Character(name,   20,  10,   5, 200, 0.12,   1,  1.5, CharacterClass::Student) {}
 
 Steve::Steve()
-    : Character("Steve", 20, 10,   5, 200, 0.12,   1,  10, CharacterClass::Student) {}
+    : Character("Steve", 20, 10,   5, 200, 0.12,   1,  1.5, CharacterClass::Student) {}
 
+// 体育生: 高血高攻，Stagger=1.0（破韧效率最低，不擅长打瘾痪 Boss）
 Athlete::Athlete(std::string name)
-    : Character(name,   35,  16,   3, 150, 0.05,   1,   5, CharacterClass::Athlete) {}
+    : Character(name,   35,  16,   3, 150, 0.05,   1,  1.0, CharacterClass::Athlete) {}
 
+// 学霸: 高防高闪避，Stagger=2.0（破韧效率最高，擅长打瘾痪 Boss）
 Nerd::Nerd(std::string name)
-    : Character(name,   14,   8,  10, 250, 0.25,   1,  12, CharacterClass::Nerd) {}
+    : Character(name,   14,   8,  10, 250, 0.25,   1,  2.0, CharacterClass::Nerd) {}

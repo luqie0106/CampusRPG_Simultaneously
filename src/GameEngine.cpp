@@ -366,6 +366,7 @@ std::string GameEngine::_EnemyTurn() {
             // 复活：血量回满，清除负面状态
             m_player->HealHp(m_player->GetMaxHealth());
             m_player->ClearNegativeEffects();
+            ResetPlayerToSpawn();   // ← Bug2 修复：重置坐标至出生点(0,0)，防止无限战斗
             ss << "\n💀 状态效果导致你倒下！眼前一黑...\n"
                << "🏥 你在校医务室的病床上醒来，并且恢复了全部状态！\n";
             return ss.str();
@@ -396,6 +397,7 @@ std::string GameEngine::_EnemyTurn() {
             // 复活：血量回满，清除负面状态（等级/经验/金币/背包全部保留）
             m_player->HealHp(m_player->GetMaxHealth());
             m_player->ClearNegativeEffects();
+            ResetPlayerToSpawn();   // ← Bug2 修复：重置坐标至出生点，防止无限战斗
             ss << "\n💀 你被击败了！眼前一黑...\n"
                << "🏥 你在校医务室的病床上醒来，并且恢复了全部状态！\n";
             return ss.str();
@@ -469,8 +471,14 @@ std::string GameEngine::BattlePlayerAttack() {
 
     m_currentEnemy->TakeDamage(damage);
 
-    // 玩家攻击同时对 Boss 造成破韧伤害（固定 1 点，可后续扩展为武器属性）
-    m_currentEnemy->TakeToughnessDamage(1);
+    // 玩家攻击同时对 Boss 造成破韧伤害
+    // 基础破韧值 = 玩家职业破韧点；装备武器时叠加武器的 stagger_bonus
+    {
+        double staggerDmg = m_player->GetStaggerPoint();
+        auto weapon = m_player->GetEquipmentAt(EquipSlot::Weapon);
+        if (weapon) staggerDmg += weapon->GetStaggerBonus();
+        m_currentEnemy->TakeToughnessDamage(staggerDmg);
+    }
 
     ss << m_player->GetName() << " 攻击了敌人，造成 " << damage << " 点伤害！\n";
     ss << "敌人剩余生命值：" << m_currentEnemy->GetHealth() << "\n";
@@ -580,7 +588,7 @@ int    GameEngine::GetPlayerLevel()        const { return m_player ? m_player->G
 int    GameEngine::GetPlayerExp()          const { return m_player ? m_player->GetExp()              : 0; }
 int    GameEngine::GetPlayerExpToNext()    const { return m_player ? m_player->ExpToNextLevel()      : 0; }
 double GameEngine::GetPlayerDodgeRate()    const { return m_player ? m_player->GetDodgeRate()        : 0.0; }
-int    GameEngine::GetPlayerStaggerPoint() const { return m_player ? m_player->GetStaggerPoint()     : 0; }
+double GameEngine::GetPlayerStaggerPoint() const { return m_player ? m_player->GetStaggerPoint() : 0.0; }
 int    GameEngine::GetPlayerFoodBuffAtk()  const { return m_player ? m_player->GetFoodBuffAtk()      : 0; }
 int    GameEngine::GetPlayerFoodBuffRounds() const { return m_player ? m_player->GetFoodBuffRoundsLeft() : 0; }
 

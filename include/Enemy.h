@@ -14,8 +14,8 @@ class Enemy {
         int defense;
         int exp;
         int gold;
-        int maxStaggerPoints;     // 最大韧性值（0 表示小怪，无韧度机制）
-        int currentStaggerPoints;
+        double maxStaggerPoints;     // 最大韧性值（0 表示小怪，无韧度机制）
+        double currentStaggerPoints;
         int staggerDuration;      // 瘫瘪持续回合数（小怪无意义）
         bool isStaggered;
         int staggerRoundsLeft;
@@ -31,7 +31,7 @@ class Enemy {
         // 小怪：staggerDuration = 0，maxStaggerPoints = 0
         // Boss：传入具体数值
         Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
-              int maxStaggerPoints, int staggerDuration = 0,
+              double maxStaggerPoints, int staggerDuration = 0,
               StatusEffectType debuffType = StatusEffectType::None,
               int debuffChance = 0, int debuffValue = 0, int debuffDuration = 0);
 
@@ -42,7 +42,7 @@ class Enemy {
         bool IsStaggered() const; // 是否处于瘫瘪状态
         bool TickStagger(); // 瘫瘪状态回合推进
         void TakeDamage(int damage); // 受到伤害
-        void TakeToughnessDamage(int toughnessDamage); // 受到破韧值伤害
+        void TakeToughnessDamage(double toughnessDamage); // 受到破韧值伤害
         std::string Attack(Character& target); // 攻击玩家
         int  GetAttack() const; // 获取攻击力
         int  GetDefense() const; // 获取防御力

@@ -95,7 +95,7 @@ public:
     // 出生坐标默认 (25, 25)，后期可通过 SetSpawnPoint() 调整
     WorldMap(int mapWidth  = 50,
              int mapHeight = 50,
-             GamePoint spawnPoint = GamePoint(25, 25));
+             GamePoint spawnPoint = GamePoint(0, 0));  // 现设为(0,0)，地图设计完成后再调整
 
     // ── 出生点管理 ────────────────────────────────────────────────────
     // 允许后期（如读档后、关卡切换后）重新设定出生坐标

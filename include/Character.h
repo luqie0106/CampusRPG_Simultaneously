@@ -27,7 +27,7 @@ private:
     double dodge_rate = 0.0;
     int exp = 0;
     int level = 1; // 等级
-    int StaggerPoint = 10; //破韧值
+    double StaggerPoint = 1.5; //破韧值（double：体育生1.0，普通学生1.5，学霸2.0）
     CharacterClass classType = CharacterClass::Student; // 职业类型
     Backpack backpack;
 
@@ -47,7 +47,7 @@ private:
 public:
     Character() = default;
     Character(std::string name, int health, int attack, int defense, int gold,
-              double dodge_rate, int level, int StaggerPoint,
+              double dodge_rate, int level, double StaggerPoint,
               CharacterClass cls = CharacterClass::Student);
 
     explicit Character(std::string name);
@@ -79,7 +79,7 @@ public:
 
     // ── 纯数据 Get（供 Qt MVC 层使用）────
     double GetDodgeRate()       const;  // 闪避率
-    int    GetStaggerPoint()    const;  // 玩家破韧值
+    double GetStaggerPoint()    const;  // 玩家破韧值（现为浮点数）
     int    GetFoodBuffAtk()     const;  // 当前食物攻击加成（0=无 buff）
     int    GetFoodBuffRoundsLeft() const; // 食物 buff 剩余回合数
 

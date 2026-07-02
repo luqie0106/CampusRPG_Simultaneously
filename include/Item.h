@@ -81,19 +81,22 @@ class Equipment : public Item {
     private:
         int defense_bonus; //防御加成
         int attack_bonus;  //攻击加成
-        int dodge_bonus;   //闪避率加成（整数百分比，如 30 表示 +30%）
+        int dodge_bonus;   //闪避率加成（整数百分比）
+        double stagger_bonus; //破韧加成（叠加到玩家的破韧值上）
         int durability;    //持久度
         EquipSlot slot;    //装备部位
     public:
-        // dodge_bonus 默认 0，保持对旧调用代码的向后兼容
+        // stagger_bonus 默认 0.0，对旧调用完全向后兼容
         Equipment(std::string name, int value, int defense_bonus, int attack_bonus,
-                  int durability, EquipSlot slot, int dodge_bonus = 0);
+                  int durability, EquipSlot slot, int dodge_bonus = 0,
+                  double stagger_bonus = 0.0);
         ~Equipment() = default;
-        int GetDefenseBonus() const;
-        int GetAttackBonus() const;
-        int GetDodgeBonus()  const;  // 返回闪避率加成（整数百分比）
-        int GetDurability()  const;
-        EquipSlot GetSlot()  const;
+        int    GetDefenseBonus()  const;
+        int    GetAttackBonus()   const;
+        int    GetDodgeBonus()    const;  // 闪避率加成（整数百分比）
+        double GetStaggerBonus()  const;  // 破韧加成
+        int    GetDurability()    const;
+        EquipSlot GetSlot()       const;
         void ReduceDurability(int amount);
         std::stringstream Show() const override;
 

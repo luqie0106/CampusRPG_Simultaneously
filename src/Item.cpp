@@ -52,15 +52,17 @@ std::stringstream Medicine::Show() const {
 }
 
 Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus,
-                     int durability, EquipSlot slot, int dodge_bonus)
+                     int durability, EquipSlot slot, int dodge_bonus, double stagger_bonus)
     : Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus),
-      dodge_bonus(dodge_bonus), durability(durability), slot(slot) {}
+      dodge_bonus(dodge_bonus), stagger_bonus(stagger_bonus),
+      durability(durability), slot(slot) {}
 
-int Equipment::GetDefenseBonus() const { return defense_bonus; }
-int Equipment::GetAttackBonus()  const { return attack_bonus; }
-int Equipment::GetDodgeBonus()   const { return dodge_bonus; }
-int Equipment::GetDurability()   const { return durability; }
-EquipSlot Equipment::GetSlot()   const { return slot; }
+int    Equipment::GetDefenseBonus()  const { return defense_bonus; }
+int    Equipment::GetAttackBonus()   const { return attack_bonus; }
+int    Equipment::GetDodgeBonus()    const { return dodge_bonus; }
+double Equipment::GetStaggerBonus()  const { return stagger_bonus; }
+int    Equipment::GetDurability()    const { return durability; }
+EquipSlot Equipment::GetSlot()       const { return slot; }
 
 void Equipment::ReduceDurability(int amount) {
     durability -= amount;
@@ -70,7 +72,8 @@ std::stringstream Equipment::Show() const {
     std::stringstream ss;
     ss << "【装备】" << getName() << " | 攻击+" << attack_bonus
        << " 防御+" << defense_bonus;
-    if (dodge_bonus > 0) ss << " 闪避+" << dodge_bonus << "%";
+    if (dodge_bonus > 0)    ss << " 闪避+" << dodge_bonus << "%";
+    if (stagger_bonus > 0)  ss << " 破韧+" << stagger_bonus;
     ss << " 耐久:" << durability;
     return ss;
 }
@@ -138,18 +141,19 @@ std::shared_ptr<Equipment> Equipment::DiamondArmor() {
 }
 
 std::shared_ptr<Equipment> Equipment::IronSword() {
-    // 铁剑: 攻击+35, 耐久600   name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("铁剑", 60,        0,       35,           600, EquipSlot::Weapon);
+    // 铁剑: 攻击+35, 耐久600, 破韧+0.5
+    //                              name  value  def  atk   dur          slot   dodge  stagger
+    return std::make_shared<Equipment>("铁剑", 60,   0,   35,  600, EquipSlot::Weapon,  0,  0.5);
 }
 
 std::shared_ptr<Equipment> Equipment::GoldenSword() {
-    // 金剑: 攻击+15但很贵, 耐久300(金较软但不至于易碎)
-    return std::make_shared<Equipment>("金剑", 80,       0,       15,          300, EquipSlot::Weapon);
+    // 金剑: 攻击+15, 耐久300, 破韧+0.5(金较软但不至于易碎)
+    return std::make_shared<Equipment>("金剑", 80,   0,   15,  300, EquipSlot::Weapon,  0,  0.5);
 }
 
 std::shared_ptr<Equipment> Equipment::DiamondSword() {
-    // 钻石剑: 攻击+50, 耐久1500   name      value    defense_bonus  attack_bonus    durability
-    return std::make_shared<Equipment>("钻石剑", 250,       0,       50,           1500, EquipSlot::Weapon);
+    // 钻石剑: 攻击+50, 耐久1500, 破韧+1.5
+    return std::make_shared<Equipment>("钻石剑", 250,  0,   50, 1500, EquipSlot::Weapon,  0,  1.5);
 }
 
 std::shared_ptr<Equipment> Equipment::IronHelmet() {

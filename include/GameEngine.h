@@ -161,7 +161,7 @@ public:
     int         GetPlayerExp()            const;  // 当前经验值
     int         GetPlayerExpToNext()      const;  // 升到下一级所需经验
     double      GetPlayerDodgeRate()      const;  // 闪避率
-    int         GetPlayerStaggerPoint()   const;  // 玩家破韧值
+    double      GetPlayerStaggerPoint()   const;  // 玩家破韧值（浮点，含职业差异）
     int         GetPlayerFoodBuffAtk()    const;  // 食物攻击 buff（0=无）
     int         GetPlayerFoodBuffRounds() const;  // 食物 buff 剩余回合数
     CharacterClass GetPlayerClass()       const;  // 职业枚举（供 Qt 切换图标）

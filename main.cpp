@@ -99,6 +99,15 @@ int main() {
         // 白天 = 普通商店；夜晚 = 黑市（通过 IsNight() 区分）
         } else if (engine.GetState() == GameState::Shop) {
             bool inBlackMarket = engine.IsNight() && engine.GetBlackMarketItems().size() > 0;
+
+            // ── Bug3 修复：昼夜穿模保护 ──────────────────────────────────
+            // 如果当前是普通商店，但时间已进入夜晚（时钟后台推进），强制驱逐
+            if (!inBlackMarket && engine.IsNight()) {
+                std::cout << "\n铛铛铛... 小卖部阿姨关灯了，把你赶了出去。\n";
+                std::cout << engine.LeaveShop();
+                continue;   // 回到主循环顶部，重新判断当前状态
+            }
+
             if (inBlackMarket) {
                 std::cout << "\n🌙 黑市操作: [0] 离开  [b <编号>] 购买\n";
             } else {

@@ -5,7 +5,7 @@
 
 // maxStaggerPoints 传 0 即为无韧度小怪；staggerDuration 为 Boss 瘫痪回合数
 Enemy::Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
-    int maxStaggerPoints, int staggerDuration,
+    double maxStaggerPoints, int staggerDuration,
     StatusEffectType debuffType, int debuffChance, int debuffValue, int debuffDuration) :
 name(name), health(health), attack(attack), defense(defense), exp(exp), gold(gold),
 maxStaggerPoints(maxStaggerPoints), currentStaggerPoints(maxStaggerPoints),
@@ -145,14 +145,14 @@ bool Enemy::TickStagger() {
     return isStaggered;
 }
 
-// ── 破韧伤害 ──────────────────────────────────────────────────────
-void Enemy::TakeToughnessDamage(int toughnessDamage) {
-    if (maxStaggerPoints == 0) return; // 小怪无韧度机制
-    if (isStaggered)           return; // 瘫痪期间不叠加
+// ── 破韧伤害（现为 double，支持浮点破韧堆叠） ─────────────────────────
+void Enemy::TakeToughnessDamage(double toughnessDamage) {
+    if (maxStaggerPoints == 0.0) return; // 小怪无韧度机制
+    if (isStaggered)             return; // 瘫痪期间不叠加
 
     currentStaggerPoints -= toughnessDamage;
-    if (currentStaggerPoints <= 0) {
-        currentStaggerPoints = 0;
+    if (currentStaggerPoints <= 0.0) {
+        currentStaggerPoints = 0.0;
         isStaggered          = true;
         staggerRoundsLeft    = staggerDuration; // 使用各自配置的回合数
     }
