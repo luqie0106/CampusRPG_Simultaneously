@@ -134,10 +134,21 @@ void Character::TickFoodBuff() {
 }
 
 // ── 纯数据 Get（供 Qt MVC 层使用） ───────────────────────────────────
-// Blind 状态下闪避率强制归零
+// Blind 状态下闪避率强制归零；否则叠加各装备的 dodge_bonus
 double Character::GetDodgeRate() const {
     if (HasBlind()) return 0.0;
-    return dodge_rate;
+    double total = dodge_rate;
+    // 遍历全部装备槽，叠加 dodge_bonus（存储为整数百分比，需除以 100）
+    auto addSlot = [&](const std::shared_ptr<Equipment>& e) {
+        if (e) total += e->GetDodgeBonus() / 100.0;
+    };
+    addSlot(equippedHead);
+    addSlot(equippedBody);
+    addSlot(equippedLegs);
+    addSlot(equippedFeet);
+    addSlot(equippedWeapon);
+    // 闪避率上限 95%（保留 5% 被命中概率，防止无敌）
+    return std::min(total, 0.95);
 }
 int    Character::GetStaggerPoint()      const { return StaggerPoint; }
 int    Character::GetFoodBuffAtk()       const { return foodBuffAtk; }

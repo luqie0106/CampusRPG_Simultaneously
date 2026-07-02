@@ -3,7 +3,10 @@
 #include "Character.h"
 #include "Enemy.h"
 #include "Shop.h"
+#include "BlackMarket.h"
+#include "GameClock.h"
 #include <optional>
+#include <mutex>
 #include "WorldMap.h"
 
 // ─────────────────────────────────────────────
@@ -91,11 +94,29 @@ public:
     // 离开商店，状态回到 InGame
     std::string LeaveShop();
 
-    // ── 存档 API ──────────────────────────────
+    // ── 存档 API ────────────────────────────────────
     std::string SaveGame();
     std::string LoadGame();
 
-    // ── 战斗 API ──────────────────────────────
+    // ── 游戏时间 API ─────────────────────────────────
+    // 返回当前游戏时间快照（线程安全）
+    GameTime    GetGameTime()     const;
+    // 当前是否夜晚（22:00–06:00）
+    bool        IsNight()         const;
+    // 返回格式化时间+昂夜标记，如 "第1天 22:05 🌙"
+    std::string GetGameTimeText() const;
+
+    // ── 黑市 API ────────────────────────────────────
+    // 进入黑市（仅允许夜晚且黑市商人已在地图）
+    std::string EnterBlackMarket();
+    // 购买黑市商品ﾈ0-based 索引）
+    std::string BuyBlackMarketItem(int itemIndex);
+    // 离开黑市
+    std::string LeaveBlackMarket();
+    // 返回当前黑市商品列表（供 Qt 渲染）
+    const std::vector<BlackMarketItem>& GetBlackMarketItems() const;
+
+    // ── 战斗 API ────────────────────────────────────
     // 开启战斗：传入目标敌人，切换至 Battle 状态。
     // 触发条件由外部（地图/UI）判断（如玩家距 Boss ≤5 单位），引擎本身不感知坐标。
     // 调用失败（如状态不对）时返回错误文本。
@@ -209,20 +230,30 @@ private:
     GameState                   m_state;
     std::shared_ptr<Character>  m_player;
     Shop                        m_shop;
+    BlackMarket                 m_blackMarket;        // 黑市实例
+    GameClock                   m_clock;              // 游戏内时钟（后台线程）
 
-    // ── 战斗状态 ──────────────────────────────
-    std::optional<Enemy>        m_currentEnemy; // 当前交战的敌人副本
+    // ── 黑市管理 ───────────────────────────────────
+    // 地图上黑市商人实体的 ID 列表
+    std::vector<int>            m_blackMarketNpcIds;
+    // 黑市商人当前是否已在地图上生成
+    bool                        m_blackMarketSpawned = false;
+    // 下一个全局唯一 ID（黑市商人 + 夜晚怪物）
+    int                         m_nextNightEntityId  = 50000;
+
+    // ── 战斗状态 ───────────────────────────────────
+    std::optional<Enemy>        m_currentEnemy;
     bool                        m_inBattle = false;
 
-    // ── 地图系统 ──────────────────────────────────
-    // 持有世界地图（实体管理 + 玩家坐标）
-    // 地图尺寸 50×50，出生点 (25,25)；可通过 m_worldMap.SetSpawnPoint() 调整
+    // ── 地图系统 ───────────────────────────────────
     WorldMap                    m_worldMap;
 
-    // 内部辅助：执行敌人回合（若敌人存活且未瘫痪则反击）
-    // 返回敌人回合的文本；同时处理玩家死亡 → GameOver
+    // 内部辅助：战斗
     std::string _EnemyTurn();
-
-    // 内部辅助：结算战斗胜利（经验 / 金币 / 掉落），切回 InGame
     std::string _SettleVictory();
+
+    // 内部回调：时钟是否切换
+    void _OnDayToNight();  // 白天→夜晚：生成黑市 + 夜晚怪物
+    void _OnNightToDay();  // 夜晚→白天：清除地图上所有黑市商人
+    void _SpawnNightEnemies(); // 在地图随机空地生成夜晚怪物
 };

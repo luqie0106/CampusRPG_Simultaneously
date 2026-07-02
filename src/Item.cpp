@@ -51,14 +51,16 @@ std::stringstream Medicine::Show() const {
     return ss;
 }
 
-Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus, int durability, EquipSlot slot) : 
-    Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus), durability(durability), slot(slot) {}
+Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus,
+                     int durability, EquipSlot slot, int dodge_bonus)
+    : Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus),
+      dodge_bonus(dodge_bonus), durability(durability), slot(slot) {}
 
 int Equipment::GetDefenseBonus() const { return defense_bonus; }
-int Equipment::GetAttackBonus() const { return attack_bonus; }
-int Equipment::GetDurability() const { return durability; }
-
-EquipSlot Equipment::GetSlot() const { return slot; }
+int Equipment::GetAttackBonus()  const { return attack_bonus; }
+int Equipment::GetDodgeBonus()   const { return dodge_bonus; }
+int Equipment::GetDurability()   const { return durability; }
+EquipSlot Equipment::GetSlot()   const { return slot; }
 
 void Equipment::ReduceDurability(int amount) {
     durability -= amount;
@@ -66,7 +68,10 @@ void Equipment::ReduceDurability(int amount) {
 
 std::stringstream Equipment::Show() const {
     std::stringstream ss;
-    ss << "【装备】" << getName() << " | 效果: 攻击力+" << attack_bonus << " 防御力+" << defense_bonus << " 耐久:" << durability;
+    ss << "【装备】" << getName() << " | 攻击+" << attack_bonus
+       << " 防御+" << defense_bonus;
+    if (dodge_bonus > 0) ss << " 闪避+" << dodge_bonus << "%";
+    ss << " 耐久:" << durability;
     return ss;
 }
 
@@ -90,6 +95,13 @@ std::shared_ptr<Food> Food::Steak() {
 std::shared_ptr<Food> Food::Pork() {
     // 猪排：即时回10HP + ATK+2 DEF+1，3回合，无附加状态效果
     return std::make_shared<Food>("猪排", 16, 10, 2, 1, 3);
+}
+
+// ========== 黑市专属 Food 工厂 ==========
+std::shared_ptr<Food> Food::MidnightBBQ() {
+    // 深夜烧烤：即时回 60 HP + ATK+20 DEF+5，持续 5 回合 + HpRegen 每回合 +10
+    //                   name          value HpRec AtkBuf DefBuf Dur    effectType           effectVal
+    return std::make_shared<Food>("深夜烧烤", 280, 60, 20, 5, 5, StatusEffectType::HpRegen, 10);
 }
 
 // ========== Medicine 工厂 ==========
@@ -183,4 +195,11 @@ std::shared_ptr<Equipment> Equipment::GoldenBoots() {
 std::shared_ptr<Equipment> Equipment::DiamondBoots() {
     // 钻石靴子: 防御+10, 耐久1200   name      value    defense_bonus  attack_bonus    durability
     return std::make_shared<Equipment>("钻石靴子", 250,       10,      0,           1200, EquipSlot::Feet);
+}
+
+// ========== 黑市专属 Equipment 工厂 ==========
+std::shared_ptr<Equipment> Equipment::NightWalkerCloak() {
+    // 夜行衣：防御+5，闪避+40%，耐久 800，身体槽
+    //                     name      value  def  atk  dur          slot          dodge
+    return std::make_shared<Equipment>("夜行衣", 500, 5, 0, 800, EquipSlot::Body, 40);
 }

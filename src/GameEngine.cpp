@@ -9,7 +9,9 @@
 GameEngine::GameEngine()
     : m_state(GameState::Uninitialized), m_player(nullptr), m_inBattle(false) {}
 
-GameEngine::~GameEngine() {}
+GameEngine::~GameEngine() {
+    m_clock.Stop();  // 确保析构时后台时钟线程已安全退出
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 生命周期
@@ -18,7 +20,13 @@ GameEngine::~GameEngine() {}
 std::string GameEngine::Init() {
     m_state = GameState::MainMenu;
     RNG::Init(); // 程序启动时初始化全局 mt19937 种子
-    return "游戏引擎初始化完成。\n";
+
+    // ── 启动游戏内时钟并注册昼夜回调 ────────────────────
+    m_clock.SetOnDayToNight([this]() { _OnDayToNight(); });
+    m_clock.SetOnNightToDay([this]() { _OnNightToDay(); });
+    m_clock.Start();
+
+    return "游戏引擎初始化完成。\n当前时间：" + GetGameTimeText() + "\n";
 }
 
 GameState GameEngine::GetState() const {
@@ -110,11 +118,18 @@ std::string GameEngine::CreatePlayer(const std::string& name, int classType) {
 
 std::string GameEngine::GetInGameMenuText() const {
     std::stringstream ss;
-    ss << "=== 主菜单 ===\n";
+    ss << "=== 主菜单 " << GetGameTimeText() << " ===\n";
     ss << "1. 查看状态\n";
     ss << "2. 查看背包\n";
-    ss << "3. 商店\n";
-    ss << "4. 保存并退出\n";
+    ss << "3. 商店";
+    if (IsNight()) ss << " (🌙夜晚小卖部闭店中)";
+    ss << "\n";
+    if (IsNight() && m_blackMarketSpawned) {
+        ss << "4. 🌙 黑市（夜间专属）\n";
+        ss << "5. 保存并退出\n";
+    } else {
+        ss << "4. 保存并退出\n";
+    }
     return ss.str();
 }
 
@@ -122,6 +137,8 @@ std::string GameEngine::HandleInGameMenuChoice(int choice) {
     if (!m_player) {
         return "错误：尚未创建角色。\n";
     }
+    // 如果夜晚且黑市已生成，菜单层级重排：1-3 不变，4=黑市，5=退出
+    bool nightBlackMarketAvail = IsNight() && m_blackMarketSpawned;
     switch (choice) {
         case 1:
             return GetPlayerStatus();
@@ -130,9 +147,21 @@ std::string GameEngine::HandleInGameMenuChoice(int choice) {
         case 3:
             return EnterShop();
         case 4: {
+            if (nightBlackMarketAvail) {
+                return EnterBlackMarket();
+            }
+            // 白天：4 = 保存并退出
             std::string saveResult = SaveGame();
             QuitGame();
             return saveResult + "已退出游戏。\n";
+        }
+        case 5: {
+            if (nightBlackMarketAvail) {
+                std::string saveResult = SaveGame();
+                QuitGame();
+                return saveResult + "已退出游戏。\n";
+            }
+            return "无效的选择！\n";
         }
         default:
             return "无效的选择！\n";
@@ -203,6 +232,10 @@ std::string GameEngine::LeaveBackpack() {
 std::string GameEngine::EnterShop() {
     if (!m_player) {
         return "错误：尚未创建角色。\n";
+    }
+    // 夜晚门禁：22:00–06:00 拒绝进入普通商店
+    if (IsNight()) {
+        return "🌙 夜深了，小卖部大门紧闭……神秘黑市也许在地图某处游荡！\n";
     }
     m_state = GameState::Shop;
     return m_shop.DisplayShop().str();
@@ -639,8 +672,15 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
         }
 
         case InteractionType::EnterShop: {
-            // 直接复用已有商店接口，状态机切换到 Shop
+            // 夜晚门禁
+            if (IsNight()) {
+                return "🌙 夜深了，小卖部大门紧闭……\n";
+            }
             return EnterShop();
+        }
+
+        case InteractionType::EnterBlackMarket: {
+            return EnterBlackMarket();
         }
 
         case InteractionType::TalkToNPC: {
@@ -664,4 +704,123 @@ void GameEngine::ResetPlayerToSpawn() {
 // 通过引擎统一注册，避免外部直接操作 WorldMap 内部状态
 void GameEngine::AddMapInteractable(InteractableInfo info) {
     m_worldMap.AddInteractable(std::move(info));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 游戏时间 API 实现
+// ─────────────────────────────────────────────────────────────────────────────
+
+GameTime GameEngine::GetGameTime() const {
+    return m_clock.GetTime();  // 内部已加锁
+}
+
+bool GameEngine::IsNight() const {
+    return m_clock.IsNight();  // 内部已加锁
+}
+
+std::string GameEngine::GetGameTimeText() const {
+    GameTime t = GetGameTime();
+    return t.ToString() + (t.IsNight() ? " 🌙" : " ☀️");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 黑市 API 实现
+// ─────────────────────────────────────────────────────────────────────────────
+
+std::string GameEngine::EnterBlackMarket() {
+    if (!m_player) return "错误：尚未创建角色。\n";
+    if (!IsNight()) {
+        return "黑市只在夜间出现，天亮后商人便消失无踪……\n";
+    }
+    if (!m_blackMarketSpawned) {
+        return "🌙 今晚黑市商人还未现身，稍后再来或在地图上寻找他吧。\n";
+    }
+    m_state = GameState::Shop;  // 复用 Shop 状态，UI 通过 GetBlackMarketItems 区分
+    return m_blackMarket.DisplayBlackMarket().str();
+}
+
+std::string GameEngine::BuyBlackMarketItem(int itemIndex) {
+    if (!m_player) return "错误：尚未创建角色。\n";
+    try {
+        return m_blackMarket.BuyItem(m_player, itemIndex).str();
+    } catch (const std::exception& e) {
+        return std::string("黑市购买失败：") + e.what() + "\n";
+    }
+}
+
+std::string GameEngine::LeaveBlackMarket() {
+    m_state = GameState::InGame;
+    return "🌙 你离开了黑市，回到了黑暗的校园。\n";
+}
+
+const std::vector<BlackMarketItem>& GameEngine::GetBlackMarketItems() const {
+    return m_blackMarket.GetItems();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 昼夜切换回调（由 GameClock 后台线程触发）
+// 注意：这些函数在后台线程中执行，WorldMap 操作已通过 m_mapMutex 保护
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 白天 → 夜晚：生成黑市商人 + 随机夜晚怪物
+void GameEngine::_OnDayToNight() {
+    // 重置并初始化黑市货架（每夜全新商品）
+    m_blackMarket.InitItems();
+
+    // ── 在出生点附近随机位置生成 1~2 个黑市商人 ──────────────────
+    m_blackMarketNpcIds.clear();
+    // 在地图中心区域随机选 2 个位置
+    static const int candidates[][2] = {
+        {22, 22}, {28, 22}, {22, 28}, {28, 28}, {25, 20}, {25, 30}
+    };
+    int count = 0;
+    for (auto& c : candidates) {
+        if (count >= 2) break;
+        int id = m_nextNightEntityId++;
+        m_worldMap.AddInteractable(
+            InteractableInfo::MakeBlackMarket(id, GamePoint(c[0], c[1]), "神秘黑市商人"));
+        m_blackMarketNpcIds.push_back(id);
+        ++count;
+    }
+    m_blackMarketSpawned = true;
+
+    // ── 生成夜晚专属怪物 ──────────────────────────────────────────
+    _SpawnNightEnemies();
+}
+
+// 夜晚 → 白天：从地图移除所有黑市商人
+void GameEngine::_OnNightToDay() {
+    for (int id : m_blackMarketNpcIds) {
+        m_worldMap.RemoveInteractable(id);
+    }
+    m_blackMarketNpcIds.clear();
+    m_blackMarketSpawned = false;
+}
+
+// 在地图固定点位生成夜晚专属怪物（不与白天怪物重叠）
+void GameEngine::_SpawnNightEnemies() {
+    // 夜晚怪物出没点位（偏离出生点的暗角）
+    struct NightSpawn {
+        int x, y;
+        bool isBoss;  // true = DormGuard; false = MidnightNerd
+    };
+    static const NightSpawn spawns[] = {
+        { 15, 15, true  },   // 宿管阿姨 - 西北角宿舍楼
+        { 35, 15, false },   // 午夜卷王 - 东北角图书馆
+        { 15, 35, false },   // 午夜卷王 - 西南角食堂
+        { 35, 35, true  },   // 宿管阿姨 - 东南角操场
+    };
+
+    for (const auto& s : spawns) {
+        int id = m_nextNightEntityId++;
+        std::string displayName = s.isBoss ? "宿管阿姨 ⚠️" : "午夜卷王幽灵 👻";
+        Enemy tpl = s.isBoss ? Enemy::DormGuard() : Enemy::MidnightNerd();
+        InteractableType eType = s.isBoss ? InteractableType::Boss : InteractableType::Enemy;
+
+        InteractableInfo info = InteractableInfo::MakeEnemy(
+            id, GamePoint(s.x, s.y), displayName, tpl);
+        info.type = eType;
+        m_worldMap.AddInteractable(std::move(info));
+        m_blackMarketNpcIds.push_back(id);  // 白天到来时一起移除
+    }
 }

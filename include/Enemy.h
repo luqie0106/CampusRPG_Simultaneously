@@ -60,4 +60,10 @@ class Enemy {
         static Enemy DeanOfStudents();  // 教导主任  (瘫瘪 1 回合)
         static Enemy PECommittee();     // 体育委员长  (瘫瘪 2 回合)
         static Enemy Principal();       // 校长      (瘫瘪 3 回合)
+
+        // ========== 夜晚专属怪物工厂 ==========
+        // 宿管阿姨：超高血量高防御 Boss，高破韧伤害 + 凋零 debuff
+        static Enemy DormGuard();
+        // 告夜卷王幽灵：血少但攻击极高的小怪，高年夜刷分奖励
+        static Enemy MidnightNerd();
 };

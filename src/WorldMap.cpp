@@ -40,6 +40,18 @@ InteractableInfo InteractableInfo::MakeNPC(int id, GamePoint pos,
     return info;
 }
 
+InteractableInfo InteractableInfo::MakeBlackMarket(int id, GamePoint pos,
+                                                    const std::string& displayName) {
+    InteractableInfo info;
+    info.id                 = id;
+    info.type               = InteractableType::BlackMarket;
+    info.defaultInteraction = InteractionType::EnterBlackMarket;
+    info.pos                = pos;
+    info.displayName        = displayName;
+    // enemyTemplate 默认为 std::nullopt
+    return info;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorldMap 构造与出生点管理
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,10 +90,12 @@ const MapSystem& WorldMap::GetMapSystem() const {
 // ─────────────────────────────────────────────────────────────────────────────
 
 void WorldMap::AddInteractable(InteractableInfo info) {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
     m_interactables.push_back(std::move(info));
 }
 
 void WorldMap::RemoveInteractable(int id) {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
     m_interactables.erase(
         std::remove_if(m_interactables.begin(), m_interactables.end(),
                        [id](const InteractableInfo& e) { return e.id == id; }),
@@ -120,6 +134,7 @@ std::vector<MapTileInfo> WorldMap::GetVisibleMap(int halfRadius) const {
     int cy = m_playerPos.y;
 
     // 按行优先顺序：dy 外层（上→下），dx 内层（左→右）
+    std::lock_guard<std::mutex> lock(m_mapMutex);
     for (int dy = -halfRadius; dy <= halfRadius; ++dy) {
         for (int dx = -halfRadius; dx <= halfRadius; ++dx) {
             int tx = cx + dx;
@@ -127,12 +142,10 @@ std::vector<MapTileInfo> WorldMap::GetVisibleMap(int halfRadius) const {
 
             MapTileInfo tile;
             tile.pos             = GamePoint(tx, ty);
-            // isWalkable 已处理越界情况（越界时返回 false，视为障碍）
             tile.tileType        = m_mapSystem.isWalkable(tx, ty) ? 0 : 1;
             tile.hasInteractable = false;
             tile.interactableId  = -1;
 
-            // 检查该格是否存在已注册的可交互实体
             for (const auto& entity : m_interactables) {
                 if (entity.pos.x == tx && entity.pos.y == ty) {
                     tile.hasInteractable = true;
@@ -149,12 +162,12 @@ std::vector<MapTileInfo> WorldMap::GetVisibleMap(int halfRadius) const {
 }
 
 std::vector<InteractableInfo> WorldMap::CheckNearbyInteractables(int radius) const {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
     std::vector<InteractableInfo> result;
     int px = m_playerPos.x;
     int py = m_playerPos.y;
 
     for (const auto& entity : m_interactables) {
-        // 使用曼哈顿距离（与四方向移动保持一致）
         int dist = std::abs(entity.pos.x - px) + std::abs(entity.pos.y - py);
         if (dist <= radius) {
             result.push_back(entity);
@@ -165,6 +178,7 @@ std::vector<InteractableInfo> WorldMap::CheckNearbyInteractables(int radius) con
 }
 
 const InteractableInfo* WorldMap::GetInteractableById(int id) const {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
     for (const auto& entity : m_interactables) {
         if (entity.id == id) {
             return &entity;

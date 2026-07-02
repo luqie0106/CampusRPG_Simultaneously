@@ -3,15 +3,17 @@
 #include "Common.h"
 #include "Map.h"
 #include "Enemy.h"
+#include <mutex>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 地图上可交互实体的类型
 // ─────────────────────────────────────────────────────────────────────────────
 enum class InteractableType {
-    Enemy,  // 普通怪物
-    Boss,   // Boss（固定点位，破韧机制启用）
-    Shop,   // 商店建筑
-    NPC,    // 任务 NPC（对话/接取任务，任务系统预留）
+    Enemy,       // 普通怪物
+    Boss,        // Boss（固定点位，破韧机制启用）
+    Shop,        // 商店建筑
+    BlackMarket, // 黑市商人（夜晚随机生成）
+    NPC,         // 任务 NPC（对话/接取任务，任务系统预留）
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,9 +21,10 @@ enum class InteractableType {
 // UI 层确认交互后，将此枚举连同 targetId 传入 ExecuteInteraction()
 // ─────────────────────────────────────────────────────────────────────────────
 enum class InteractionType {
-    StartBattle,  // 进入战斗（Enemy / Boss 点位）
-    EnterShop,    // 进入商店
-    TalkToNPC,    // 与 NPC 对话（任务系统 TODO，暂留桩）
+    StartBattle,      // 进入战斗（Enemy / Boss 点位）
+    EnterShop,        // 进入普通商店
+    EnterBlackMarket, // 进入黑市（夜晚专属）
+    TalkToNPC,        // 与 NPC 对话（任务系统 TODO，暂留桩）
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,6 +60,10 @@ struct InteractableInfo {
     // NPC 点位（任务系统预留）
     static InteractableInfo MakeNPC(int id, GamePoint pos,
                                     const std::string& displayName);
+
+    // 黑市商人点位
+    static InteractableInfo MakeBlackMarket(int id, GamePoint pos,
+                                            const std::string& displayName);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,4 +140,5 @@ private:
     GamePoint                     m_playerPos;
     GamePoint                     m_spawnPoint;
     std::vector<InteractableInfo> m_interactables;
+    mutable std::mutex            m_mapMutex;  // 保护 m_interactables 的多线程并发读写
 };

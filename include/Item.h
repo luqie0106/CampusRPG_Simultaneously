@@ -56,6 +56,10 @@ class Food : public Item {
         static std::shared_ptr<Food> EnchantedGoldenApple();  // 附魔金苹果：HpRegen 3 回合
         static std::shared_ptr<Food> Steak();                 // 熟牛排：无状态效果，3 回合
         static std::shared_ptr<Food> Pork();                  // 猪排：无状态效果，3 回合
+
+        // ── 黑市专属食物工厂 ──────────────────────────────────────
+        // 深夜烧烤：即时回 60 HP，ATK+20，持续 5 回合 + HpRegen 每回合+10
+        static std::shared_ptr<Food> MidnightBBQ();
 };
 
 class Medicine : public Item {
@@ -76,16 +80,20 @@ class Medicine : public Item {
 class Equipment : public Item {
     private:
         int defense_bonus; //防御加成
-        int attack_bonus; //攻击加成
-        int durability; //持久度
-        EquipSlot slot; //装备部位
+        int attack_bonus;  //攻击加成
+        int dodge_bonus;   //闪避率加成（整数百分比，如 30 表示 +30%）
+        int durability;    //持久度
+        EquipSlot slot;    //装备部位
     public:
-        Equipment(std::string name, int value, int defense_bonus, int attack_bonus, int durability, EquipSlot slot);
+        // dodge_bonus 默认 0，保持对旧调用代码的向后兼容
+        Equipment(std::string name, int value, int defense_bonus, int attack_bonus,
+                  int durability, EquipSlot slot, int dodge_bonus = 0);
         ~Equipment() = default;
         int GetDefenseBonus() const;
         int GetAttackBonus() const;
-        int GetDurability() const;
-        EquipSlot GetSlot() const;
+        int GetDodgeBonus()  const;  // 返回闪避率加成（整数百分比）
+        int GetDurability()  const;
+        EquipSlot GetSlot()  const;
         void ReduceDurability(int amount);
         std::stringstream Show() const override;
 
@@ -105,4 +113,8 @@ class Equipment : public Item {
         static std::shared_ptr<Equipment> IronBoots();
         static std::shared_ptr<Equipment> GoldenBoots();
         static std::shared_ptr<Equipment> DiamondBoots();
+
+        // ── 黑市专属装备工厂 ──────────────────────────────────────
+        // 夜行衣：极高闪避率 +40%，DEF+5，耐久 800，身体槽
+        static std::shared_ptr<Equipment> NightWalkerCloak();
 };
