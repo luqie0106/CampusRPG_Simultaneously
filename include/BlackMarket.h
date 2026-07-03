@@ -28,7 +28,7 @@ public:
     // 展示黑市界面文本
     std::stringstream DisplayBlackMarket() const;
 
-    // 购买物品（0-based 索引），返回结果文本
+    // 购买物品（1-based 索引），返回结果文本
     std::stringstream BuyItem(std::shared_ptr<Character> player, int itemIndex);
 
     // 返回全部商品的只读引用（供 Qt 渲染列表）

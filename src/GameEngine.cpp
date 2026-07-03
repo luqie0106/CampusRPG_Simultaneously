@@ -436,6 +436,7 @@ std::string GameEngine::_SettleVictory() {
 
     m_inBattle     = false;
     m_currentEnemy = std::nullopt;
+    m_player->ClearNegativeEffects();
     m_state        = GameState::InGame;
     ss << "\n战斗结束，返回游戏主菜单。\n";
     return ss.str();
@@ -562,6 +563,7 @@ std::string GameEngine::BattleFlee() {
 
     m_inBattle     = false;
     m_currentEnemy = std::nullopt;
+    m_player->ClearNegativeEffects();
     m_state        = GameState::InGame;
 
     return "🏃 你选择了逃跑……战斗以失败告终。\n返回游戏主菜单。\n";

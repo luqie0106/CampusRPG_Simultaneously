@@ -101,6 +101,10 @@ class Equipment : public Item {
         std::stringstream Show() const override;
 
         // Minecraft 装备工厂
+        // 在普通的面向对象编程里，如果您想调用一个类的函数，必须先造出一个类的对象（实例）。
+        // 加上 static 之后，这个函数就脱离了具体的对象，直接挂靠在类名上了。
+        // 这就意味着，系统（比如商店刷新时，或者打怪掉落时）根本不需要提前拥有任何装备
+        // 实例，而是只需要知道 "Equipment::IronSword" 这个名字，就能立刻“变”出铁甲。
         static std::shared_ptr<Equipment> IronArmor();
         static std::shared_ptr<Equipment> GoldenArmor();
         static std::shared_ptr<Equipment> DiamondArmor();

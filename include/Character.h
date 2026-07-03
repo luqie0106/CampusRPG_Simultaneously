@@ -16,6 +16,12 @@ public:
     static constexpr int MAX_LEVEL    = 20;  // 等级上限
     static constexpr int HP_PER_LEVEL = 2;   // 每级 +1 颗心 (2HP)
     static constexpr int ATK_PER_LEVEL = 2;  // 每级 +2 攻击
+    /*
+    static constexpr :
+    1. 零内存开销：在运行时，它甚至不需要分配实际的内存空间。
+    2. 极致速度：CPU 不需要去读取内存变量，直接执行固定数值指令。
+    3. 能干大事：因为它是编译期就确定的，所以它可以用来做那些必须要编译期数值的事情，比如定义数组的长度：int expTable[Character::MAX_LEVEL];（如果是普通变量做不到这一点）。
+    */
 
 private:
     std::string name;
