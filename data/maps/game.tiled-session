@@ -1,0 +1,354 @@
+{
+    "activeFile": "forest.tmj",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "file.lastUsedOpenFilter": "全部文件 (*)",
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "classroom.tmj": {
+            "expandedObjectLayers": [
+                4
+            ],
+            "scale": 0.75,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": -566,
+                "y": 557.9999999999999
+            }
+        },
+        "classroom.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "classroom.tmj#japanese-school_8x8-final.tileset": {
+            "scaleInDock": 1
+        },
+        "classroom.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "classroom1.tmj": {
+            "expandedObjectLayers": [
+                4
+            ],
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 937.3333333333334,
+                "y": 244.66666666666663
+            }
+        },
+        "classroom1.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom1.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom1.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "classroom1.tmj#japanese-school_8x8-final.tileset": {
+            "scaleInDock": 1
+        },
+        "classroom1.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "classroom2.tmj": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1062.6666666666667,
+                "y": 244.66666666666663
+            }
+        },
+        "classroom2.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom2.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "classroom2.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "classroom2.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "corridor.tmj": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 582.6666666666667,
+                "y": 244.66666666666663
+            }
+        },
+        "corridor.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "corridor.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "corridor.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "corridor.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "corridor.tmj#buch-outdoor": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "corridor.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj": {
+            "expandedObjectLayers": [
+                5,
+                6
+            ],
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 457.33333333333337,
+                "y": 1204.6666666666667
+            }
+        },
+        "dormitory.tmj#Fence's copiar": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#buch-outdoor": {
+            "scaleInDock": 1
+        },
+        "dormitory.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "forest.tmj": {
+            "expandedObjectLayers": [
+                6,
+                8
+            ],
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 674.6666666666667,
+                "y": 1532.6666666666665
+            }
+        },
+        "forest.tmj#1": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#FD_Dungeon_Free": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#FG_Cellar": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#Maple Tree": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#Objects": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#Road copiar": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#Tileset": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#buch-outdoor": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#characters": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#spr_tileset_sunnysideworld_16px": {
+            "scaleInDock": 1
+        },
+        "forest.tmj#sunnyside_world_chatacter_anim_human_v1.0": {
+            "scaleInDock": 1
+        },
+        "office.tmj": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 114.66666666666674,
+                "y": -1027.3333333333333
+            }
+        },
+        "office.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "office.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "office.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "outside.tmj": {
+            "expandedObjectLayers": [
+                3
+            ],
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 2057.333333333333,
+                "y": 1204.6666666666667
+            }
+        },
+        "outside.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#Objects": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#Tileset": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#buch-outdoor": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#outside1": {
+            "scaleInDock": 1
+        },
+        "outside.tmj#outside2": {
+            "scaleInDock": 1
+        },
+        "shop.tmj": {
+            "expandedObjectLayers": [
+                5
+            ],
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1154.6666666666667,
+                "y": 332.66666666666663
+            }
+        },
+        "shop.tmj#Fence's copiar": {
+            "scaleInDock": 1
+        },
+        "shop.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "shop.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "shop.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "shop.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "shop.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj": {
+            "scale": 0.75,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 388.66666666666663,
+                "y": 556.6666666666667
+            }
+        },
+        "tileset1.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj#buch-outdoor": {
+            "scaleInDock": 1
+        },
+        "tileset1.tmj#tiles and items": {
+            "scaleInDock": 1
+        },
+        "tileset2.tmj": {
+            "expandedObjectLayers": [
+                5
+            ],
+            "scale": 0.75,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 1092,
+                "y": 214
+            }
+        },
+        "tileset2.tmj#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "tileset2.tmj#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "tileset2.tmj#Tileset_16x16_9": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "D:/CampusRPG/assets/maps",
+    "loadedWorlds": [
+        "D:/CampusRPG/assets/maps/game.world"
+    ],
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
+    "openFiles": [
+        "forest.tmj",
+        "classroom1.tmj",
+        "corridor.tmj",
+        "outside.tmj",
+        "office.tmj",
+        "classroom2.tmj",
+        "dormitory.tmj",
+        "shop.tmj"
+    ],
+    "project": "game.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "shop.tmj",
+        "dormitory.tmj",
+        "classroom2.tmj",
+        "office.tmj",
+        "outside.tmj",
+        "corridor.tmj",
+        "classroom1.tmj",
+        "forest.tmj",
+        "tileset1.tmj",
+        "classroom.tmj",
+        "tileset2.tmj"
+    ]
+}

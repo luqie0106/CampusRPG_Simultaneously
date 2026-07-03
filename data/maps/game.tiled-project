@@ -1,0 +1,226 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        "."
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "id": 1,
+            "name": "EntityCategory",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "Player",
+                "NPC",
+                "Monster",
+                "Item"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 5,
+            "members": [
+                {
+                    "name": "category",
+                    "propertyType": "EntityCategory",
+                    "type": "string",
+                    "value": "Item"
+                },
+                {
+                    "name": "itemId",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "respawnTime",
+                    "type": "int",
+                    "value": 30
+                }
+            ],
+            "name": "Item",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 6,
+            "members": [
+                {
+                    "name": "world_offset_x",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "world_offset_y",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "map",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 4,
+            "members": [
+                {
+                    "name": "atk",
+                    "type": "int",
+                    "value": 10
+                },
+                {
+                    "name": "category",
+                    "propertyType": "EntityCategory",
+                    "type": "string",
+                    "value": "Monster"
+                },
+                {
+                    "name": "hp",
+                    "type": "int",
+                    "value": 50
+                },
+                {
+                    "name": "isBoss",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "patrolRadius",
+                    "type": "int",
+                    "value": 2
+                },
+                {
+                    "name": "spriteId",
+                    "type": "int",
+                    "value": 100
+                }
+            ],
+            "name": "Monster",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 3,
+            "members": [
+                {
+                    "name": "category",
+                    "propertyType": "EntityCategory",
+                    "type": "string",
+                    "value": "NPC"
+                },
+                {
+                    "name": "dialogId",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "hasQuest",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "hasShop",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "npcName",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "questId",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "spriteId",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "NPC",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 2,
+            "members": [
+                {
+                    "name": "category",
+                    "propertyType": "EntityCategory",
+                    "type": "string",
+                    "value": "Player"
+                }
+            ],
+            "name": "PlayerSpawn",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        }
+    ]
+}

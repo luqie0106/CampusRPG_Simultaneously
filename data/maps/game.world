@@ -1,0 +1,83 @@
+{
+    "maps": [
+        {
+            "fileName": "tileset1.tmj",
+            "height": 640,
+            "width": 640,
+            "x": -80,
+            "y": -16
+        },
+        {
+            "fileName": "tileset2.tmj",
+            "height": 480,
+            "width": 480,
+            "x": 0,
+            "y": 624
+        },
+        {
+            "fileName": "classroom.tmj",
+            "height": 640,
+            "width": 480,
+            "x": 560,
+            "y": -16
+        },
+        {
+            "fileName": "classroom1.tmj",
+            "height": 640,
+            "width": 480,
+            "x": 560,
+            "y": -16
+        },
+        {
+            "fileName": "outside.tmj",
+            "height": 960,
+            "width": 1600,
+            "x": -560,
+            "y": -976
+        },
+        {
+            "fileName": "dormitory.tmj",
+            "height": 960,
+            "width": 800,
+            "x": 1040,
+            "y": -976
+        },
+        {
+            "fileName": "shop.tmj",
+            "height": 480,
+            "width": 480,
+            "x": -1040,
+            "y": -736
+        },
+        {
+            "fileName": "forest.tmj",
+            "height": 960,
+            "width": 1600,
+            "x": -560,
+            "y": -1936
+        },
+        {
+            "fileName": "classroom2.tmj",
+            "height": 640,
+            "width": 480,
+            "x": -560,
+            "y": -16
+        },
+        {
+            "fileName": "corridor.tmj",
+            "height": 640,
+            "width": 640,
+            "x": -80,
+            "y": -16
+        },
+        {
+            "fileName": "office.tmj",
+            "height": 480,
+            "width": 480,
+            "x": 0,
+            "y": 624
+        }
+    ],
+    "onlyShowAdjacentMaps": false,
+    "type": "world"
+}
