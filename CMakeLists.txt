@@ -20,10 +20,21 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql)
 # 头文件包含路径
 include_directories(include)
 
-# 自动搜集 src 目录和根目录下的代码文件（根目录用非递归以防扫到 build 文件夹）
-file(GLOB SRC_ROOT_FILES *.cpp *.h)
-file(GLOB_RECURSE SRC_DIR_FILES src/*.cpp src/*.h)
-set(SRC_FILES ${SRC_ROOT_FILES} ${SRC_DIR_FILES})
+# ====================================================================
+# 2. 收集项目内所有的头文件与源文件（安全过滤版）
+# ====================================================================
+
+# 先递归搜集所有文件
+file(GLOB_RECURSE ALL_RAW_FILES *.cpp *.h)
+
+# 过滤掉所有属于 build 文件夹的文件！
+set(SRC_FILES "")
+foreach(FILE_PATH ${ALL_RAW_FILES})
+    # 如果路径里不包含 /build/，才加进源码列表
+    if(NOT FILE_PATH MATCHES "/build/")
+        list(APPEND SRC_FILES ${FILE_PATH})
+    endif()
+endforeach()
 
 # 自动搜集 ui 文件和资源文件
 file(GLOB UI_FILES *.ui)
