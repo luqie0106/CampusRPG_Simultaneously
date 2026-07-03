@@ -1,5 +1,7 @@
 #include "../include/Shop.h"
 #include "../include/Exceptions.h"
+#include "../include/RNG.h"
+#include <algorithm>
 
 Shop::Shop() {
     InitShopItems();
@@ -8,31 +10,55 @@ Shop::Shop() {
 Shop::~Shop() {}
 
 void Shop::InitShopItems() {
+    m_allShopItems.clear();
     // 食物
-    m_shopItems.push_back({Food::Steak(),                5, 5});
-    m_shopItems.push_back({Food::GoldenApple(),          3, 3});
-    m_shopItems.push_back({Food::EnchantedGoldenApple(), 1, 1});
+    m_allShopItems.push_back({Food::Pork(),                  5, 5});
+    m_allShopItems.push_back({Food::Steak(),                 5, 5});
+    m_allShopItems.push_back({Food::GoldenApple(),           3, 3});
+    m_allShopItems.push_back({Food::EnchantedGoldenApple(),  1, 1});
     // 药品
-    m_shopItems.push_back({Medicine::HealingPotion(),       5, 5});
-    m_shopItems.push_back({Medicine::StrongHealingPotion(), 3, 3});
-    m_shopItems.push_back({Medicine::RegenPotion(),         3, 3});
+    m_allShopItems.push_back({Medicine::HealingPotion(),       5, 5});
+    m_allShopItems.push_back({Medicine::StrongHealingPotion(), 3, 3});
+    m_allShopItems.push_back({Medicine::RegenPotion(),         3, 3});
     // 装备
-    m_shopItems.push_back({Equipment::IronSword(),    2, 2});
-    m_shopItems.push_back({Equipment::IronArmor(),    2, 2});
-    m_shopItems.push_back({Equipment::GoldenSword(),  1, 1});
-    m_shopItems.push_back({Equipment::GoldenArmor(),  1, 1});
-    m_shopItems.push_back({Equipment::DiamondSword(), 1, 1});
-    m_shopItems.push_back({Equipment::DiamondArmor(), 1, 1});
-    lastRefreshTime = std::chrono::system_clock::now();
+    m_allShopItems.push_back({Equipment::IronSword(),    2, 2});
+    m_allShopItems.push_back({Equipment::IronHelmet(),   2, 2});
+    m_allShopItems.push_back({Equipment::IronArmor(),    2, 2});
+    m_allShopItems.push_back({Equipment::IronLeggings(), 2, 2});
+    m_allShopItems.push_back({Equipment::IronBoots(),    2, 2});
+    
+    m_allShopItems.push_back({Equipment::GoldenSword(),  1, 1});
+    m_allShopItems.push_back({Equipment::GoldenHelmet(), 1, 1});
+    m_allShopItems.push_back({Equipment::GoldenArmor(),  1, 1});
+    m_allShopItems.push_back({Equipment::GoldenLeggings(),1, 1});
+    m_allShopItems.push_back({Equipment::GoldenBoots(),  1, 1});
+    
+    m_allShopItems.push_back({Equipment::DiamondSword(), 1, 1});
+    m_allShopItems.push_back({Equipment::DiamondHelmet(),1, 1});
+    m_allShopItems.push_back({Equipment::DiamondArmor(), 1, 1});
+    m_allShopItems.push_back({Equipment::DiamondLeggings(),1, 1});
+    m_allShopItems.push_back({Equipment::DiamondBoots(), 1, 1});
+
+    lastRefreshTime = std::chrono::system_clock::now() - std::chrono::hours(24);
+    RefreshShop();
 }
 
 void Shop::RefreshShop() {
     auto now = std::chrono::system_clock::now();
     auto hours = std::chrono::duration_cast<std::chrono::hours>(now - lastRefreshTime).count();
     if (hours >= 24) {
-        for (auto& shopItem : m_shopItems) {
-            shopItem.stock = shopItem.maxStock;
+        std::vector<ShopItem> pool = m_allShopItems;
+        for (int i = (int)pool.size() - 1; i > 0; --i) {
+            int j = RNG::RandInt(0, i);
+            std::swap(pool[i], pool[j]);
         }
+        
+        m_shopItems.clear();
+        for (int i = 0; i < 15 && i < (int)pool.size(); ++i) {
+            pool[i].stock = pool[i].maxStock;
+            m_shopItems.push_back(pool[i]);
+        }
+        
         lastRefreshTime = now;
     }
 }

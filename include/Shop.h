@@ -31,5 +31,6 @@ public:
 
 private:
     std::vector<ShopItem> m_shopItems;
+    std::vector<ShopItem> m_allShopItems;
     std::chrono::system_clock::time_point lastRefreshTime;
 };
