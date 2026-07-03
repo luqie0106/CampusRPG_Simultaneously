@@ -38,11 +38,11 @@ std::stringstream BlackMarket::DisplayBlackMarket() const {
 std::stringstream BlackMarket::BuyItem(std::shared_ptr<Character> player, int itemIndex) {
     std::stringstream ss;
 
-    if (itemIndex < 0 || itemIndex >= static_cast<int>(m_items.size())) {
+    if (itemIndex < 1 || itemIndex > static_cast<int>(m_items.size())) {
         throw GameException("无效的黑市商品选择。");
     }
 
-    auto& bmi = m_items[itemIndex];
+    auto& bmi = m_items[itemIndex - 1];
 
     if (bmi.stock <= 0) {
         throw GameException(bmi.item->getName() + " 已售罄！");

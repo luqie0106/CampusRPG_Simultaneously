@@ -128,9 +128,9 @@ int main() {
             } else if (op == 'b' || op == 'B') {
                 int idx = SafeInputInt("输入商品编号: ");
                 if (inBlackMarket) {
-                    std::cout << engine.BuyBlackMarketItem(idx - 1); // 转为 0-based
+                    std::cout << engine.BuyBlackMarketItem(idx); // 传 1-based
                 } else {
-                    std::cout << engine.BuyItem(idx - 1); // 转为 0-based
+                    std::cout << engine.BuyItem(idx); // 传 1-based
                 }
             } else if ((op == 's' || op == 'S') && !inBlackMarket) {
                 std::cout << engine.GetBackpackText();
