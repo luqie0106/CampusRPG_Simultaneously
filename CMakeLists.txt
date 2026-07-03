@@ -20,14 +20,16 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql)
 # 头文件包含路径
 include_directories(include)
 
-# 自动搜集 src 目录下的所有 .cpp 源文件
-file(GLOB_RECURSE SRC_FILES src/*.cpp main.cpp)
+# 自动搜集 src 目录和根目录下的代码文件（根目录用非递归以防扫到 build 文件夹）
+file(GLOB SRC_ROOT_FILES *.cpp *.h)
+file(GLOB_RECURSE SRC_DIR_FILES src/*.cpp src/*.h)
+set(SRC_FILES ${SRC_ROOT_FILES} ${SRC_DIR_FILES})
 
-# 如果你们有 UI 文件 (.ui) 或资源文件 (.qrc)，把它们也加进这里
-# file(GLOB_RECURSE UI_FILES ui/*.ui)
+# 自动搜集 ui 文件
+file(GLOB UI_FILES *.ui)
 
 # 3. 定义生成的可执行文件
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${UI_FILES})
 
 # 4. 链接 Qt6 的库到你们的游戏项目中
 target_link_libraries(${PROJECT_NAME} PRIVATE

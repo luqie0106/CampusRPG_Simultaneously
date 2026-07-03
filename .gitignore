@@ -17,6 +17,7 @@ qrc_*.cpp
 # 编译器/IDE 缓存
 .vscode/
 .idea/
+.qtcreator/
 *.user
 *.suo
 *.ncb
