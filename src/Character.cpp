@@ -91,12 +91,19 @@ void Character::EquipItem(std::shared_ptr<Equipment> equip) {
 }
 
 void Character::UnequipItem(EquipSlot slot) {
+    auto returnToBackpack = [&](std::shared_ptr<Equipment>& currentSlot) {
+        if (currentSlot) {
+            backpack.AddItem(std::make_unique<Equipment>(*currentSlot));
+            currentSlot = nullptr;
+        }
+    };
+
     switch (slot) {
-        case EquipSlot::Head: equippedHead = nullptr; break;
-        case EquipSlot::Body: equippedBody = nullptr; break;
-        case EquipSlot::Legs: equippedLegs = nullptr; break;
-        case EquipSlot::Feet: equippedFeet = nullptr; break;
-        case EquipSlot::Weapon: equippedWeapon = nullptr; break;
+        case EquipSlot::Head:   returnToBackpack(equippedHead);   break;
+        case EquipSlot::Body:   returnToBackpack(equippedBody);   break;
+        case EquipSlot::Legs:   returnToBackpack(equippedLegs);   break;
+        case EquipSlot::Feet:   returnToBackpack(equippedFeet);   break;
+        case EquipSlot::Weapon: returnToBackpack(equippedWeapon); break;
         default: break;
     }
 }

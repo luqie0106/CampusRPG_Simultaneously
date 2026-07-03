@@ -7,6 +7,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 void Backpack::AddItem(std::unique_ptr<Item> item) {
+    if (items.size() >= 1000) {
+        throw GameException("背包已满，无法放入更多物品！");
+    }
     if (item) {
         items.push_back(std::move(item));
     }
@@ -73,6 +76,7 @@ std::string Backpack::UseItem(int index, Character& player) {
                << "/" << player.GetMaxHealth() << "）\n";
         } else {
             ss << "  生命值已满，药品没有额外效果。\n";
+            return ss.str();
         }
 
     // ── Equipment：穿戴装备 ─────────────────────────────────────
