@@ -45,13 +45,13 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene)
         TilesetInfo tsInfo;
         tsInfo.firstGid = tsObj["firstgid"].toInt();
         
-        // 处理图片路径 (例如 "../tiles/Interiors_free_16x16.png" -> ":/data/tiles/Interiors_free_16x16.png")
+        // 处理图片路径: 将 "../tiles/Interiors_free_16x16.png" 转换为绝对物理路径
         QString imagePath = tsObj["image"].toString();
-        // 因为Tiled导出的相对路径格式固定，所以做个简单的字符串替换
         int lastSlash = imagePath.lastIndexOf('/');
         if (lastSlash != -1) {
             QString fileName = imagePath.mid(lastSlash + 1);
-            imagePath = ":/data/tiles/" + fileName;
+            // 使用 CMake 传进来的跨平台绝对路径宏
+            imagePath = QString(PROJECT_DATA_DIR) + "/tiles/" + fileName;
         }
         
         tsInfo.image = QPixmap(imagePath);

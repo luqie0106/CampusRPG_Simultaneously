@@ -40,6 +40,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Sql
 )
 
+# 5. 跨平台素材路径神器：将代码所在的真实目录传递给 C++
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    PROJECT_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
+)
+
 # 针对 Windows 系统的特殊处理：防止运行时弹出一个空白的 CMD 命令行窗口
 if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES

@@ -20,8 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 把视图塞满主窗口
     setCentralWidget(view);
 
-    // 测试：加载第一张地图 classroom1.json
-    QtMapLoader::LoadMapToScene(":/data/maps/classroom1.json", mapScene);
+    // 测试：加载第一张地图 classroom1.json，使用 CMake 传入的绝对物理路径
+    QString mapPath = QString(PROJECT_DATA_DIR) + "/maps/classroom1.json";
+    QtMapLoader::LoadMapToScene(mapPath, mapScene);
 
     // 默认放大3倍，方便看清 16x16 像素小人
     view->scale(3.0, 3.0);
