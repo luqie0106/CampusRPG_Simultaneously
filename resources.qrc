@@ -1,0 +1,35 @@
+<RCC>
+    <qresource prefix="/">
+        <file>data/maps/classroom1.json</file>
+        <file>data/maps/classroom1.tmj</file>
+        <file>data/maps/classroom2.json</file>
+        <file>data/maps/classroom2.tmj</file>
+        <file>data/maps/corridor.json</file>
+        <file>data/maps/corridor.tmj</file>
+        <file>data/maps/dormitory.json</file>
+        <file>data/maps/dormitory.tmj</file>
+        <file>data/maps/forest.json</file>
+        <file>data/maps/forest.tmj</file>
+        <file>data/maps/game.tiled-project</file>
+        <file>data/maps/game.tiled-session</file>
+        <file>data/maps/game.world</file>
+        <file>data/maps/office.json</file>
+        <file>data/maps/office.tmj</file>
+        <file>data/maps/outside.json</file>
+        <file>data/maps/outside.tmj</file>
+        <file>data/maps/shop.json</file>
+        <file>data/maps/shop.tmj</file>
+        <file>data/tiles/buch-outdoor.png</file>
+        <file>data/tiles/Fence's copiar.png</file>
+        <file>data/tiles/FG_Cellar.png</file>
+        <file>data/tiles/Interiors_free_16x16.png</file>
+        <file>data/tiles/Maple Tree.png</file>
+        <file>data/tiles/Objects.png</file>
+        <file>data/tiles/Road copiar.png</file>
+        <file>data/tiles/Room_Builder_free_16x16.png</file>
+        <file>data/tiles/tiles and items.png</file>
+        <file>data/tiles/Tileset Spring.png</file>
+        <file>data/tiles/Tileset_16x16_9.png</file>
+        <file>data/tiles/Tileset.png</file>
+    </qresource>
+</RCC>
