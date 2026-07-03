@@ -26,6 +26,7 @@ int SafeInputInt(const std::string& prompt) {
     }
 }
 
+#if 0
 int main() {
     GameEngine engine;
     std::cout << engine.Init();
@@ -199,4 +200,18 @@ int main() {
     }
 
     return 0;
+}
+#endif
+
+// ==========================================================
+// Qt GUI 时代的入口：替换掉原先的黑框框控制台循环
+// ==========================================================
+#include "mainwindow.h"
+#include <QApplication>
+
+int main(int argc, char *argv[]) {
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
 }

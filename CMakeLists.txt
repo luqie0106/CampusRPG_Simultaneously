@@ -25,11 +25,12 @@ file(GLOB SRC_ROOT_FILES *.cpp *.h)
 file(GLOB_RECURSE SRC_DIR_FILES src/*.cpp src/*.h)
 set(SRC_FILES ${SRC_ROOT_FILES} ${SRC_DIR_FILES})
 
-# 自动搜集 ui 文件
+# 自动搜集 ui 文件和资源文件
 file(GLOB UI_FILES *.ui)
+file(GLOB QRC_FILES *.qrc)
 
 # 3. 定义生成的可执行文件
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${UI_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${UI_FILES} ${QRC_FILES})
 
 # 4. 链接 Qt6 的库到你们的游戏项目中
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -42,6 +43,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # 针对 Windows 系统的特殊处理：防止运行时弹出一个空白的 CMD 命令行窗口
 if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        WIN32_EXECUTABLE ON
     )
 endif()
+
+# Force CMake reload for new files
