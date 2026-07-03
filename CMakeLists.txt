@@ -59,6 +59,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # 针对 Windows 系统的特殊处理：防止运行时弹出一个空白的 CMD 命令行窗口
 if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE ON
     )
 endif()
 
