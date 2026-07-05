@@ -25,12 +25,21 @@ MainWindow::MainWindow(QWidget *parent)
     view = new QGraphicsView(mapScene, this);
     this->setCentralWidget(view);
 
+    // 修复 Mac 下按键无反应的问题（焦点与输入法拦截）
+    this->setFocusPolicy(Qt::StrongFocus);
+    view->setFocusPolicy(Qt::NoFocus);
+    this->setAttribute(Qt::WA_InputMethodEnabled, false);
+
     // ========== 加载初始室外地图背景 ==========
     QFile testMap(":/data/maps/outside.json");
     if(testMap.exists())
     {
         qDebug() << "地图资源加载成功";
         QtMapLoader::LoadMapToScene(":/data/maps/outside.json", mapScene);
+        
+        // --- 修复：彻底锁死地图边界 ---
+        // 防止由于玩家自带画笔导致的动态 sceneRect 不断膨胀（即缓慢穿墙Bug）
+        mapScene->setSceneRect(mapScene->itemsBoundingRect());
     }
     else
     {
