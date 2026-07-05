@@ -1,0 +1,39 @@
+# 编译生成的二进制文件与中间件
+*.obj
+*.o
+*.exe
+*.out
+*.app
+
+# Qt 自动生成的代码与中间文件
+Makefile
+*.Debug
+*.Release
+object_script.*
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# 编译器/IDE 缓存
+.vscode/
+.idea/
+.qtcreator/
+*.user
+*.suo
+*.ncb
+*.opensdf
+*.sdf
+*.build
+
+# 排除 CMake 编译生成的 build 文件夹
+build/
+.cmake/
+
+# 排除 Mac 系统自带的隐藏文件
+.DS_Store
+
+# CMakeUserPresets.json 文件
+CMakeUserPresets.json
+
+# 排除 .cache 文件夹
+.cache/
