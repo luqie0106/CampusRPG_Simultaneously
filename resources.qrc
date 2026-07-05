@@ -32,4 +32,5 @@
         <file>data/tiles/Tileset_16x16_9.png</file>
         <file>data/tiles/Tileset.png</file>
     </qresource>
+    <qresource prefix="/data"/>
 </RCC>

@@ -36,11 +36,11 @@ foreach(FILE_PATH ${ALL_RAW_FILES})
     endif()
 endforeach()
 
-# 自动搜集 ui 文件和资源文件
+# 自动搜集 ui 文件和资源文件（自动识别resources.qrc）
 file(GLOB UI_FILES *.ui)
 file(GLOB QRC_FILES *.qrc)
 
-# 3. 定义生成的可执行文件
+# 3. 定义生成的可执行文件（自动带上qrc资源）
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${UI_FILES} ${QRC_FILES})
 
 # 4. 链接 Qt6 的库到你们的游戏项目中
@@ -52,7 +52,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # 5. 跨平台素材路径神器：将代码所在的真实目录传递给 C++
-target_compile_definitions(${PROJECT_NAME} PRIVATE 
+target_compile_definitions(${PROJECT_NAME} PRIVATE
     PROJECT_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
 )
 
@@ -62,5 +62,3 @@ if(WIN32)
         WIN32_EXECUTABLE ON
     )
 endif()
-
-# Force CMake reload for new files
