@@ -62,7 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 移动定时器 16ms刷新一次（60帧）
     moveTimer = new QTimer(this);
-    connect(moveTimer, &QTimer::timeout, this, [=]()
+    connect(moveTimer, &QTimer::timeout, this, [=, this]()
             {
                 int dx = 0;
                 int dy = 0;
