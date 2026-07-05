@@ -30,35 +30,20 @@ MainWindow::MainWindow(QWidget *parent)
     view->setFocusPolicy(Qt::NoFocus);
     this->setAttribute(Qt::WA_InputMethodEnabled, false);
 
-    // ========== 加载初始室外地图背景 ==========
-    QFile testMap(":/data/maps/outside.json");
-    if(testMap.exists())
-    {
-        qDebug() << "地图资源加载成功";
-        QtMapLoader::LoadMapToScene(":/data/maps/outside.json", mapScene);
-        
-        // --- 修复：彻底锁死地图边界 ---
-        // 防止由于玩家自带画笔导致的动态 sceneRect 不断膨胀（即缓慢穿墙Bug）
-        mapScene->setSceneRect(mapScene->itemsBoundingRect());
-    }
-    else
-    {
-        qDebug() << "地图资源读取失败，请检查qrc和构建";
-    }
-
-    // ========== 黑屏过渡遮罩（传送切换用） ==========
-    blackMask = new QGraphicsRectItem(mapScene->sceneRect());
-    blackMask->setBrush(Qt::black);
-    blackMask->setZValue(9999); // 最高层级盖住所有内容
-    blackMask->hide();
-    mapScene->addItem(blackMask);
+    // ========== 无缝加载大世界地图 ==========
+    QString worldPath = QString(PROJECT_DATA_DIR) + "/maps/game.world";
+    qDebug() << "开始加载大世界:" << worldPath;
+    QtMapLoader::LoadWorldToScene(worldPath, mapScene);
+    
+    // 锁死整个大世界地图边界
+    mapScene->setSceneRect(mapScene->itemsBoundingRect());
 
     // 创建蓝色玩家方块 30×30
     player = new QGraphicsRectItem(0, 0, 30, 30);
     player->setBrush(QBrush(QColor(0, 120, 255)));
     player->setZValue(10); // 方块层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
-    player->setPos(200, 200); // 初始出生坐标
+    player->setPos(0, -200); // 初始出生坐标 (在 outside 的安全区域)
 
     // 移动定时器 16ms刷新一次（60帧）
     moveTimer = new QTimer(this);
@@ -96,15 +81,14 @@ MainWindow::MainWindow(QWidget *parent)
                 // 镜头跟随玩家居中
                 view->centerOn(player);
 
-                // 每帧检测传送门
-                checkTeleport();
+                // 现已采用无缝大地图，无需传送门检测
             });
     moveTimer->start(16);
 }
 
 MainWindow::~MainWindow()
 {
-    delete blackMask; // 释放遮罩内存，防止泄漏
+
     delete ui;
 }
 
@@ -136,46 +120,4 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
         QMainWindow::keyReleaseEvent(event);
         break;
     }
-}
-
-// 检测传送门坐标（坐标改到画面可视中间，扩大触发范围）
-void MainWindow::checkTeleport()
-{
-    QPointF p = player->pos();
-    // 室外地图传送点：画面中间区域，容易走到
-    const qreal tpX = 400;
-    const qreal tpY = 300;
-    // 60像素超大触发范围，不会踩不到
-    if(p.x() >= tpX && p.x() <= tpX + 60 && p.y() >= tpY && p.y() <= tpY + 60)
-    {
-        switchMap(":/data/maps/office.json", QPointF(80, 80));
-    }
-
-    // 办公室回程传送点（切回室外）
-    const qreal backX = 60;
-    const qreal backY = 60;
-    if(p.x() >= backX && p.x() <= backX + 60 && p.y() >= backY && p.y() <= backY + 60)
-    {
-        switchMap(":/data/maps/outside.json", QPointF(420, 320));
-    }
-}
-// 切换地图核心函数
-void MainWindow::switchMap(const QString& mapPath, QPointF spawnPos)
-{
-    blackMask->show();
-    view->update();
-    QThread::msleep(200);
-
-    mapScene->clear();
-    // 加载新地图
-    QtMapLoader::LoadMapToScene(mapPath, mapScene);
-
-    // 重置玩家位置，重新添加到场景
-    player->setPos(spawnPos);
-    mapScene->addItem(player);
-    // 遮罩放回顶层
-    mapScene->addItem(blackMask);
-
-    view->centerOn(player);
-    blackMask->hide();
 }

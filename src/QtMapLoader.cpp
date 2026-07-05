@@ -7,7 +7,7 @@
 #include <QPixmap>
 #include <QDebug>
 
-void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene) {
+void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene, int offsetX, int offsetY) {
     if (!scene) return;
 
     QFile file(jsonPath);
@@ -106,7 +106,7 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene)
                         QPixmap tileImg = ts.image.copy(srcX, srcY, ts.tileWidth, ts.tileHeight);
                         
                         QGraphicsPixmapItem* item = new QGraphicsPixmapItem(tileImg);
-                        item->setPos(x * tileWidth, y * tileHeight);
+                        item->setPos(x * tileWidth + offsetX, y * tileHeight + offsetY);
                         scene->addItem(item);
 
                         break; // 找到对应瓦片就跳出查找
@@ -114,5 +114,45 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene)
                 }
             }
         }
+    }
+}
+
+void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath, QGraphicsScene* scene) {
+    if (!scene) return;
+
+    QFile file(worldJsonPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Failed to open world file:" << worldJsonPath;
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if (doc.isNull() || !doc.isObject()) {
+        qWarning() << "Failed to parse JSON world:" << worldJsonPath;
+        return;
+    }
+
+    QJsonObject worldObj = doc.object();
+    QJsonArray mapsArray = worldObj["maps"].toArray();
+
+    // 遍历世界上所有的地图，根据坐标拼接到大幕布里
+    for (int i = 0; i < mapsArray.size(); ++i) {
+        QJsonObject mapItem = mapsArray[i].toObject();
+        QString fileName = mapItem["fileName"].toString();
+        
+        // 由于 Tiled 导出的是 .tmj 扩展名，而我们的文件都是 .json
+        if (fileName.endsWith(".tmj")) {
+            fileName.replace(".tmj", ".json");
+        }
+
+        int x = mapItem["x"].toInt();
+        int y = mapItem["y"].toInt();
+
+        // 假设所有的子地图都在 world 文件所在的同一个 maps 文件夹下
+        QString mapPath = QString(PROJECT_DATA_DIR) + "/maps/" + fileName;
+        
+        // 调用单张地图加载函数，传入物理偏移量
+        qDebug() << "Loading chunk:" << fileName << "at" << x << "," << y;
+        LoadMapToScene(mapPath, scene, x, y);
     }
 }
