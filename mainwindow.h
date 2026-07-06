@@ -8,6 +8,9 @@ namespace Ui {
 class MainWindow;
 }
 
+#include <QGraphicsPixmapItem>
+#include <QPixmap>
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -27,8 +30,10 @@ private:
     QGraphicsScene *mapScene;
     QGraphicsView *view;
 
-    // 玩家方块对象
-    QGraphicsRectItem *player;
+    // 玩家贴图对象
+    QGraphicsPixmapItem *player;
+    // 存储玩家的4个朝向贴图 (0左, 1上, 2右, 3下)
+    QPixmap playerFrames[4];
     // 移动速度（只声明，不赋值）
     int moveSpeed;
     // 按键状态标记（只声明，不赋值）

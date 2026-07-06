@@ -35,10 +35,26 @@ MainWindow::MainWindow(QWidget *parent)
     // 锁死整个大世界地图边界
     mapScene->setSceneRect(mapScene->itemsBoundingRect());
 
-    // 创建蓝色玩家方块 30×30
-    player = new QGraphicsRectItem(0, 0, 30, 30);
-    player->setBrush(QBrush(QColor(0, 120, 255)));
-    player->setZValue(10); // 方块层级高于地图，不会被瓦片遮挡
+    // ========== 玩家贴图切片与初始化 ==========
+    // TODO: 目前放了一个占位路径，请将你的贴图放入项目中并在此处替换正确的路径
+    QPixmap fullSpriteSheet(":/data/tiles/player_sprite.png"); 
+    int frameW = fullSpriteSheet.width() / 24; 
+    int frameH = fullSpriteSheet.height();
+    
+    if (!fullSpriteSheet.isNull() && frameW > 0 && frameH > 0) {
+        playerFrames[0] = fullSpriteSheet.copy(0, 0, frameW, frameH);            // 左
+        playerFrames[1] = fullSpriteSheet.copy(6 * frameW, 0, frameW, frameH);   // 上
+        playerFrames[2] = fullSpriteSheet.copy(12 * frameW, 0, frameW, frameH);  // 右
+        playerFrames[3] = fullSpriteSheet.copy(18 * frameW, 0, frameW, frameH);  // 下
+    } else {
+        qWarning() << "未能加载玩家精灵图，或者尺寸计算错误！请检查路径。";
+    }
+
+    player = new QGraphicsPixmapItem();
+    if (!fullSpriteSheet.isNull()) {
+        player->setPixmap(playerFrames[3]); // 默认朝下
+    }
+    player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
     player->setPos(0, -200); // 初始出生坐标 (在 outside 的安全区域)
 
@@ -48,15 +64,15 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 int dx = 0;
                 int dy = 0;
-                // 计算移动偏移
-                if (keyW) dy -= moveSpeed;
-                if (keyS) dy += moveSpeed;
-                if (keyA) dx -= moveSpeed;
-                if (keyD) dx += moveSpeed;
+                // 计算移动偏移并更新人物朝向
+                if (keyW) { dy -= moveSpeed; if(!playerFrames[1].isNull()) player->setPixmap(playerFrames[1]); }
+                if (keyS) { dy += moveSpeed; if(!playerFrames[3].isNull()) player->setPixmap(playerFrames[3]); }
+                if (keyA) { dx -= moveSpeed; if(!playerFrames[0].isNull()) player->setPixmap(playerFrames[0]); }
+                if (keyD) { dx += moveSpeed; if(!playerFrames[2].isNull()) player->setPixmap(playerFrames[2]); }
 
-                // ========== 新增：地图边界限制，防止跑出地图 ==========
+                // ========== 地图边界限制，防止跑出地图 ==========
                 QRectF mapRange = mapScene->sceneRect();
-                QRectF playerSize = player->rect();
+                QRectF playerSize = player->boundingRect();
                 qreal targetX = player->x() + dx;
                 qreal targetY = player->y() + dy;
 
