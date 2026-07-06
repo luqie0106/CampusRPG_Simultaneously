@@ -36,18 +36,21 @@ MainWindow::MainWindow(QWidget *parent)
     mapScene->setSceneRect(mapScene->itemsBoundingRect());
 
     // ========== 玩家贴图切片与初始化 ==========
-    // TODO: 目前放了一个占位路径，请将你的贴图放入项目中并在此处替换正确的路径
-    QPixmap fullSpriteSheet(":/data/tiles/player_sprite.png"); 
-    int frameW = fullSpriteSheet.width() / 24; 
-    int frameH = fullSpriteSheet.height();
-    
-    if (!fullSpriteSheet.isNull() && frameW > 0 && frameH > 0) {
-        playerFrames[0] = fullSpriteSheet.copy(0, 0, frameW, frameH);            // 左
-        playerFrames[1] = fullSpriteSheet.copy(6 * frameW, 0, frameW, frameH);   // 上
-        playerFrames[2] = fullSpriteSheet.copy(12 * frameW, 0, frameW, frameH);  // 右
-        playerFrames[3] = fullSpriteSheet.copy(18 * frameW, 0, frameW, frameH);  // 下
+    // 精灵图: male_01_hat_walk_32x32_3frames.png
+    // 规格: 每帧 32x32, 每行 3 帧, 共 4 行(4个方向)
+    // 实测行序: 0下, 1左, 2右, 3上
+    QPixmap fullSpriteSheet(":/data/data/tiles/male_01_hat_walk_32x32_3frames.png");
+    const int frameW = 32;
+    const int frameH = 32;
+
+    if (!fullSpriteSheet.isNull()) {
+        // 取每行中间帧(第2列, index=1)作为该方向静止贴图
+        playerFrames[0] = fullSpriteSheet.copy(frameW * 1, frameH * 1, frameW, frameH);  // 左
+        playerFrames[1] = fullSpriteSheet.copy(frameW * 1, frameH * 3, frameW, frameH);  // 上
+        playerFrames[2] = fullSpriteSheet.copy(frameW * 1, frameH * 2, frameW, frameH);  // 右
+        playerFrames[3] = fullSpriteSheet.copy(frameW * 1, frameH * 0, frameW, frameH);  // 下
     } else {
-        qWarning() << "未能加载玩家精灵图，或者尺寸计算错误！请检查路径。";
+        qWarning() << "未能加载玩家精灵图，请检查 qrc 路径与构建！";
     }
 
     player = new QGraphicsPixmapItem();

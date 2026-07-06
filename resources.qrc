@@ -32,5 +32,7 @@
         <file>data/tiles/Tileset_16x16_9.png</file>
         <file>data/tiles/Tileset.png</file>
     </qresource>
-    <qresource prefix="/data"/>
+    <qresource prefix="/data">
+        <file>data/tiles/male_01_hat_walk_32x32_3frames.png</file>
+    </qresource>
 </RCC>
