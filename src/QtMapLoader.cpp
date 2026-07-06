@@ -1,6 +1,8 @@
 #include "Common.h"
+#include <QFileInfo>
 
 #include "QtMapLoader.h"
+#include "Enemy.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 静态 Tileset 图片缓存：避免重复加载同一张大图
@@ -18,9 +20,177 @@ static QString resolveImagePath(const QString& rawPath) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LoadMapToScene：加载单张地图 JSON，渲染所有 tilelayer 到 scene
+// 判断图层名是否为碰撞层（含 "obstruction"，大小写不敏感）
 // ─────────────────────────────────────────────────────────────────────────────
-void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene, int offsetX, int offsetY) {
+static bool isObstructionLayer(const QString& layerName) {
+    return layerName.contains(QStringLiteral("obstruction"), Qt::CaseInsensitive);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 从 Tiled 对象的 properties 数组中按名称查找属性值
+// ─────────────────────────────────────────────────────────────────────────────
+static QJsonValue getProperty(const QJsonArray& properties, const QString& name) {
+    for (int i = 0; i < properties.size(); ++i) {
+        QJsonObject p = properties[i].toObject();
+        if (p["name"].toString() == name) {
+            return p["value"];
+        }
+    }
+    return QJsonValue();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 解析单个 objectgroup 图层，向 worldMap 注册可交互实体
+//
+// 坐标约定：
+//   obj["x"], obj["y"]  — 对象在当前子地图中的像素坐标（左上角）
+//   tileOffsetX/Y       — 当前子地图的左上角在 MapSystem 格子坐标系中的偏移
+//   tileWidth/Height    — 单个瓦片的像素尺寸
+//
+// 支持的 object type：
+//   "Monster"    → MakeEnemy / MakeBoss
+//   "NPC"        → MakeNPC
+//   "Door"       → MakeDoor（预留，当前地图无 Door 对象）
+//   "PlayerSpawn"→ SetSpawnPoint
+//   "Item"       → 暂不处理（拾取系统待实现）
+// ─────────────────────────────────────────────────────────────────────────────
+static void parseObjectGroup(const QJsonObject& layerObj,
+                             WorldMap* worldMap,
+                             int tileWidth, int tileHeight,
+                             int tileOffsetX, int tileOffsetY)
+{
+    if (!worldMap) return;
+
+    QJsonArray objects = layerObj["objects"].toArray();
+    for (int oi = 0; oi < objects.size(); ++oi) {
+        QJsonObject obj = objects[oi].toObject();
+
+        // 像素坐标 → 格子坐标（向下取整）
+        int px = static_cast<int>(obj["x"].toDouble());
+        int py = static_cast<int>(obj["y"].toDouble());
+        int tileX = tileOffsetX + px / tileWidth;
+        int tileY = tileOffsetY + py / tileHeight;
+
+        QString objType  = obj["type"].toString();
+        QString objName  = obj["name"].toString();
+        int     objId    = obj["id"].toInt();          // Tiled 自动分配，地图内唯一
+        QJsonArray props = obj["properties"].toArray();
+
+        GamePoint pos(tileX, tileY);
+
+        // ── PlayerSpawn：设置出生点 ────────────────────────────────────
+        if (objType == QStringLiteral("PlayerSpawn")) {
+            worldMap->SetSpawnPoint(pos);
+            qDebug() << "  [PlayerSpawn] 出生点 →" << tileX << "," << tileY;
+            continue;
+        }
+
+        // ── Door（传送点，预留） ───────────────────────────────────────
+        if (objType == QStringLiteral("Door")) {
+            QString targetMap = getProperty(props, "targetMap").toString();
+            int     targetX   = getProperty(props, "targetX").toInt(0);
+            int     targetY   = getProperty(props, "targetY").toInt(0);
+            worldMap->AddInteractable(
+                InteractableInfo::MakeDoor(objId, pos,
+                                           objName.isEmpty() ? "门" : objName.toStdString(),
+                                           targetMap.toStdString(),
+                                           targetX, targetY));
+            qDebug() << "  [Door] id=" << objId << "tile=(" << tileX << "," << tileY
+                     << ") → " << targetMap;
+            continue;
+        }
+
+        // ── Monster（普通怪物或 Boss） ────────────────────────────────
+        if (objType == QStringLiteral("Monster")) {
+            bool isBoss = getProperty(props, "isBoss").toBool(false);
+            int  sprId  = getProperty(props, "spriteId").toInt(0);
+
+            // 根据 spriteId 选对应的 Enemy 工厂
+            // spriteId 100 = Boss, 101-109 = 普通怪物（按 id 映射不同类型）
+            Enemy tpl = Enemy::Bully(); // 默认：校园混混
+            std::string displayName = objName.isEmpty() ? "神秘怪物" : objName.toStdString();
+
+            if (isBoss) {
+                // Boss 使用 DormGuard 作为默认模板
+                // 如需按 Tiled 中的自定义 hp/atk 覆盖，需要 Enemy 提供 setter，暂时记录日志
+                int customHp  = getProperty(props, "hp").toInt(0);
+                int customAtk = getProperty(props, "atk").toInt(0);
+                tpl = Enemy::DormGuard();
+                if (customHp > 0 || customAtk > 0) {
+                    qDebug() << "  [Boss] Tiled 自定义 hp=" << customHp << " atk=" << customAtk
+                             << "（Enemy 暂无 setter，使用 DormGuard 默认值）";
+                }
+                displayName = objName.isEmpty() ? "Boss" : objName.toStdString();
+            } else {
+                // 普通怪物按 spriteId 映射（对应 Enemy 工厂方法）
+                switch (sprId) {
+                    case 101: tpl = Enemy::Bully();       displayName = "校园混混";   break;
+                    case 102: tpl = Enemy::Skipper();     displayName = "逃课大神";   break;
+                    case 103: tpl = Enemy::Cheater();     displayName = "考试黄牛";   break;
+                    case 104: tpl = Enemy::GangMember();  displayName = "小弟弟";     break;
+                    case 105: tpl = Enemy::Bully();       displayName = "小流氓";     break;
+                    case 106: tpl = Enemy::Skipper();     displayName = "混混头目";   break;
+                    case 107: tpl = Enemy::MidnightNerd(); displayName = "竞赛狂人";  break;
+                    default:  tpl = Enemy::Bully();       break;
+                }
+                if (!objName.isEmpty()) displayName = objName.toStdString();
+            }
+
+            InteractableInfo info = InteractableInfo::MakeEnemy(objId, pos, displayName, tpl);
+            if (isBoss) info.type = InteractableType::Boss;
+            worldMap->AddInteractable(std::move(info));
+
+            qDebug() << "  [Monster] id=" << objId << "isBoss=" << isBoss
+                     << "spriteId=" << sprId << "tile=(" << tileX << "," << tileY << ")";
+            continue;
+        }
+
+        // ── NPC（对话/任务 NPC） ──────────────────────────────────────
+        if (objType == QStringLiteral("NPC")) {
+            QString npcName = getProperty(props, "npcName").toString();
+            if (npcName.isEmpty()) npcName = objName;
+            bool hasShop = getProperty(props, "hasShop").toBool(false);
+
+            InteractableInfo info;
+            if (hasShop) {
+                info = InteractableInfo::MakeShop(objId, pos, npcName.toStdString());
+            } else {
+                info = InteractableInfo::MakeNPC(objId, pos, npcName.toStdString());
+            }
+            worldMap->AddInteractable(std::move(info));
+
+            qDebug() << "  [NPC] id=" << objId << "name=" << npcName
+                     << "hasShop=" << hasShop << "tile=(" << tileX << "," << tileY << ")";
+            continue;
+        }
+
+        // ── Item（暂不处理，拾取系统待实现） ─────────────────────────
+        if (objType == QStringLiteral("Item")) {
+            int itemId = getProperty(props, "itemId").toInt(0);
+            qDebug() << "  [Item] id=" << objId << "itemId=" << itemId
+                     << "tile=(" << tileX << "," << tileY << ") - 暂未注册（拾取系统待实现）";
+            continue;
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LoadMapToScene：加载单张地图 JSON，渲染所有 tilelayer 到 scene
+//
+// 同时（当 worldMap != nullptr 时）：
+//   A. 对 obstruction 图层逐格写入 MapSystem：
+//      - tileId != 0 → setTile(worldX, worldY, 1)（障碍）
+//      - tileId == 0 → setTile(worldX, worldY, 0)（可通行）
+//   B. 对 objectgroup 图层解析实体并注册到 WorldMap
+// ─────────────────────────────────────────────────────────────────────────────
+void QtMapLoader::LoadMapToScene(const QString& jsonPath,
+                                 QGraphicsScene* scene,
+                                 WorldMap* worldMap,
+                                 int pixelOffsetX,
+                                 int pixelOffsetY,
+                                 int tileOffsetX,
+                                 int tileOffsetY)
+{
     if (!scene) return;
 
     QFile file(jsonPath);
@@ -112,15 +282,25 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene,
         return a.firstGid > b.firstGid;
     });
 
-    // ── 2. 遍历 Layers，仅处理 tilelayer ────────────────────────────────────
+    // ── 2. 遍历 Layers ───────────────────────────────────────────────────────
     QJsonArray layersArray = mapObj["layers"].toArray();
     for (int li = 0; li < layersArray.size(); ++li) {
         QJsonObject layerObj = layersArray[li].toObject();
-        if (layerObj["type"].toString() != "tilelayer") continue;
+        QString layerType    = layerObj["type"].toString();
+        QString layerName    = layerObj["name"].toString();
+
+        // ── objectgroup 层：解析实体，注册到 WorldMap ──────────────────────
+        if (layerType == QStringLiteral("objectgroup")) {
+            parseObjectGroup(layerObj, worldMap, tileWidth, tileHeight,
+                             tileOffsetX, tileOffsetY);
+            continue;
+        }
+
+        // ── tilelayer 层 ───────────────────────────────────────────────────
+        if (layerType != QStringLiteral("tilelayer")) continue;
         if (!layerObj["visible"].toBool(true)) continue; // 跳过隐藏层
 
-        // 支持分块压缩（chunk）格式
-        bool hasChunks = layerObj.contains("chunks");
+        bool isObstruction = isObstructionLayer(layerName);
 
         // ── Tiled 翻转标志（高3位）──────────────────────────────────────────
         // bit31: 水平翻转, bit30: 垂直翻转, bit29: 对角翻转（90°旋转）
@@ -131,7 +311,20 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene,
 
         // 统一为 (localX, localY, rawTileId) 三元组处理
         auto processTile = [&](int lx, int ly, int rawTileId) {
-            if (rawTileId == 0) return; // 0 = 空格
+
+            // ── 碰撞同步（obstruction 层）──────────────────────────────────
+            // 对 obstruction 层的每个格子，都需要写入 MapSystem：
+            //   tileId != 0 → 此格有障碍瓦片 → setTile(1)（保持障碍）
+            //   tileId == 0 → 此格无瓦片 → setTile(0)（开通可行走）
+            // 这样子地图覆盖区域的可行走性完全由 obstruction 层决定。
+            if (isObstruction && worldMap) {
+                int wx = tileOffsetX + lx;
+                int wy = tileOffsetY + ly;
+                worldMap->GetMapSystem().setTile(wx, wy, rawTileId != 0 ? 1 : 0);
+            }
+
+            // ── 渲染（只渲染非空瓦片）─────────────────────────────────────
+            if (rawTileId == 0) return; // 0 = 空格，无需渲染
 
             // 解析翻转标志，提取真实 GID
             quint32 raw = static_cast<quint32>(rawTileId);
@@ -176,13 +369,16 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene,
                     }
 
                     QGraphicsPixmapItem* item = new QGraphicsPixmapItem(tileImg);
-                    item->setPos(lx * tileWidth + offsetX,
-                                 ly * tileHeight + offsetY);
+                    item->setPos(lx * tileWidth  + pixelOffsetX,
+                                 ly * tileHeight + pixelOffsetY);
                     scene->addItem(item);
                     break;
                 }
             }
         };
+
+        // 支持分块压缩（chunk）格式
+        bool hasChunks = layerObj.contains("chunks");
 
         if (hasChunks) {
             // 分块格式（infinite map）
@@ -219,8 +415,20 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene,
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LoadWorldToScene：加载 .world 文件，拼接所有子地图到 scene
+//
+// 当 worldMap != nullptr 时，额外执行：
+//   1. 遍历所有子地图，计算世界格栅的总覆盖范围（minTile / maxTile）
+//   2. 调用 worldMap->InitMapSize(totalW, totalH)（全格障碍初始化）
+//   3. 对每张子地图调用 LoadMapToScene 并传入格子偏移（tileOffsetX/Y）
+//
+// 坐标系：
+//   - 每张子地图在 .world 文件中的 (x, y) 是像素坐标，相对于世界原点
+//   - 世界原点可能为负值；我们将最小 (minPx, minPy) 归零作为格子坐标系原点
 // ─────────────────────────────────────────────────────────────────────────────
-void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath, QGraphicsScene* scene) {
+void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath,
+                                   QGraphicsScene* scene,
+                                   WorldMap* worldMap)
+{
     if (!scene) return;
 
     QFile file(worldJsonPath);
@@ -235,10 +443,29 @@ void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath, QGraphicsScene*
         return;
     }
 
-    QJsonObject worldObj = doc.object();
-    QJsonArray mapsArray = worldObj["maps"].toArray();
+    QJsonObject worldObj  = doc.object();
+    QJsonArray  mapsArray = worldObj["maps"].toArray();
 
     s_pixmapCache.clear(); // 每次加载 World 时清空缓存，避免跨世界脏数据
+
+    // ── Step 1: 收集所有子地图的元信息 ──────────────────────────────────
+    struct SubMapEntry {
+        QString mapPath;
+        int pixelX;   // .world 中的像素偏移 X
+        int pixelY;   // .world 中的像素偏移 Y
+        int pixelW;   // .world 中记录的像素宽度
+        int pixelH;   // .world 中记录的像素高度
+    };
+
+    // 默认瓦片尺寸（绝大多数地图一致；若子地图不同会以其自身为准）
+    constexpr int DEFAULT_TILE_W = 16;
+    constexpr int DEFAULT_TILE_H = 16;
+
+    QList<SubMapEntry> entries;
+    int minPx = INT_MAX, minPy = INT_MAX;
+    int maxPx = INT_MIN, maxPy = INT_MIN;
+
+    // worldDir 未使用（mapPath 已由 PROJECT_DATA_DIR 拼接）
 
     for (int i = 0; i < mapsArray.size(); ++i) {
         QJsonObject mapItem = mapsArray[i].toObject();
@@ -250,17 +477,61 @@ void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath, QGraphicsScene*
         }
 
         QString mapPath = QString(PROJECT_DATA_DIR) + "/maps/" + fileName;
-
-        // 文件不存在则跳过（防止废弃条目导致崩溃）
         if (!QFile::exists(mapPath)) {
             qWarning() << "LoadWorldToScene: 地图文件不存在，跳过:" << mapPath;
             continue;
         }
 
-        int x = mapItem["x"].toInt();
-        int y = mapItem["y"].toInt();
+        SubMapEntry e;
+        e.mapPath = mapPath;
+        e.pixelX  = mapItem["x"].toInt();
+        e.pixelY  = mapItem["y"].toInt();
+        e.pixelW  = mapItem["width"].toInt();
+        e.pixelH  = mapItem["height"].toInt();
+        entries.append(e);
 
-        qDebug() << "加载地图块:" << fileName << "偏移 (" << x << "," << y << ")";
-        LoadMapToScene(mapPath, scene, x, y);
+        minPx = std::min(minPx, e.pixelX);
+        minPy = std::min(minPy, e.pixelY);
+        maxPx = std::max(maxPx, e.pixelX + e.pixelW);
+        maxPy = std::max(maxPy, e.pixelY + e.pixelH);
+    }
+
+    if (entries.isEmpty()) {
+        qWarning() << "LoadWorldToScene: 没有可加载的子地图";
+        return;
+    }
+
+    // ── Step 2: 计算世界格栅总尺寸并初始化 MapSystem ──────────────────
+    if (worldMap) {
+        int totalPxW = maxPx - minPx;
+        int totalPxH = maxPy - minPy;
+        int totalTileW = (totalPxW + DEFAULT_TILE_W - 1) / DEFAULT_TILE_W; // 向上取整
+        int totalTileH = (totalPxH + DEFAULT_TILE_H - 1) / DEFAULT_TILE_H;
+
+        qDebug() << "LoadWorldToScene: 世界格栅初始化"
+                 << totalTileW << "x" << totalTileH
+                 << "（像素范围" << minPx << "," << minPy << "->" << maxPx << "," << maxPy << "）";
+
+        // 全障碍初始化；后续每张子地图的 obstruction 层负责逐格开通可行走区域
+        worldMap->InitMapSize(totalTileW, totalTileH);
+    }
+
+    // ── Step 3: 逐张加载子地图 ───────────────────────────────────────────
+    for (const SubMapEntry& e : entries) {
+        // 场景中的像素偏移：相对最小角归零
+        int sceneOffX = e.pixelX - minPx;
+        int sceneOffY = e.pixelY - minPy;
+
+        // MapSystem 中的格子偏移（将负数像素坐标映射到非负格子坐标）
+        int tileOffX = (e.pixelX - minPx) / DEFAULT_TILE_W;
+        int tileOffY = (e.pixelY - minPy) / DEFAULT_TILE_H;
+
+        qDebug() << "\u52a0\u8f7d\u5b50\u5730\u56fe:" << QString(e.mapPath).split('/').last()
+                 << "scene偏移(" << sceneOffX << "," << sceneOffY << ")"
+                 << "tile偏移(" << tileOffX << "," << tileOffY << ")";
+
+        LoadMapToScene(e.mapPath, scene, worldMap,
+                       sceneOffX, sceneOffY,
+                       tileOffX,  tileOffY);
     }
 }

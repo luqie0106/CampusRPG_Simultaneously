@@ -12,6 +12,7 @@ enum class InteractableType {
     Shop,        // 商店建筑
     BlackMarket, // 黑市商人（夜晚随机生成）
     NPC,         // 任务 NPC（对话/接取任务，任务系统预留）
+    Door,        // 门/传送点（走上自动触发切场退，当前预留）
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ enum class InteractionType {
     EnterShop,        // 进入普通商店
     EnterBlackMarket, // 进入黑市（夜晚专属）
     TalkToNPC,        // 与 NPC 对话（任务系统 TODO，暂留桩）
+    TeleportMap,      // 传送到目标地图（当前地图全系拼接大图，预留供未来扩展）
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,6 +47,12 @@ struct InteractableInfo {
     // 地图同学通过 MakeEnemy() 工厂传入，WorldMap 不修改此字段。
     std::optional<Enemy> enemyTemplate;
 
+    // 仅 type == Door 时有效：目标地图名称和传送坐标。
+    // 当前全局地图已是大拼图，暂时预留供未来扩展多层地图时使用。
+    std::string targetMap;               // 目标地图名（相对于 maps/ 目录的文件名）
+    int         targetX = 0;             // 传送目标坐标 X（世界格子）
+    int         targetY = 0;             // 传送目标坐标 Y（世界格子）
+
     // ── 便捷工厂方法 ─────────────────────────────────────────────────
     // 怪物/Boss 点位：传入 Enemy 工厂生成的实例作为模板
     static InteractableInfo MakeEnemy(int id, GamePoint pos,
@@ -62,6 +70,13 @@ struct InteractableInfo {
     // 黑市商人点位
     static InteractableInfo MakeBlackMarket(int id, GamePoint pos,
                                             const std::string& displayName);
+
+    // 门/传送点（当前地图已是大拼图，预留供未来扩展使用）
+    // targetMap: 目标地图文件名（相对于 maps/），targetX/Y: 目标世界格子坐标
+    static InteractableInfo MakeDoor(int id, GamePoint pos,
+                                     const std::string& displayName,
+                                     const std::string& targetMap,
+                                     int targetX, int targetY);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,6 +122,10 @@ public:
     // 地图同学通过此方法拿到 MapSystem，调用 setTile() 布置障碍 / 地形
     MapSystem& GetMapSystem();
     const MapSystem& GetMapSystem() const;
+
+    // 重置地图尺寸（全障碍初始化），供 QtMapLoader::LoadWorldToScene 调用
+    // QtMapLoader 随后按 obstruction 层逐格调用 GetMapSystem().setTile() 开通可行走区域
+    void InitMapSize(int width, int height);
 
     // ── 实体注册 / 注销 ───────────────────────────────────────────────
     // 地图同学在地图初始化时调用 AddInteractable() 注册点位

@@ -54,6 +54,22 @@ InteractableInfo InteractableInfo::MakeBlackMarket(int id, GamePoint pos,
     return info;
 }
 
+InteractableInfo InteractableInfo::MakeDoor(int id, GamePoint pos,
+                                            const std::string& displayName,
+                                            const std::string& tgtMap,
+                                            int tgtX, int tgtY) {
+    InteractableInfo info;
+    info.id                 = id;
+    info.type               = InteractableType::Door;
+    info.defaultInteraction = InteractionType::TeleportMap;
+    info.pos                = pos;
+    info.displayName        = displayName;
+    info.targetMap          = tgtMap;
+    info.targetX            = tgtX;
+    info.targetY            = tgtY;
+    return info;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorldMap 构造与出生点管理
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,6 +101,10 @@ MapSystem& WorldMap::GetMapSystem() {
 
 const MapSystem& WorldMap::GetMapSystem() const {
     return m_mapSystem;
+}
+
+void WorldMap::InitMapSize(int width, int height) {
+    m_mapSystem.InitMapSize(width, height);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

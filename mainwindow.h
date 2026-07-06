@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "GameEngine.h"
 
   // 新增：切换地图函数需要QPointF类型
 
@@ -43,5 +44,8 @@ private:
     bool keyD;
     // 刷新移动定时器
     QTimer *moveTimer;
+
+    // 游戏引擎实例（持有 WorldMap、碰撞数据、玩家状态等）
+    GameEngine m_engine;
 };
 

@@ -718,6 +718,11 @@ void GameEngine::AddMapInteractable(InteractableInfo info) {
     m_worldMap.AddInteractable(std::move(info));
 }
 
+// 【WorldMap 直接访问】供 QtMapLoader 在地图加载阶段使用
+WorldMap& GameEngine::GetWorldMap() {
+    return m_worldMap;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 游戏时间 API 实现
 // ─────────────────────────────────────────────────────────────────────────────

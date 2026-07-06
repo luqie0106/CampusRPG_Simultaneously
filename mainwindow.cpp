@@ -27,11 +27,14 @@ MainWindow::MainWindow(QWidget *parent)
     view->setFocusPolicy(Qt::NoFocus);
     this->setAttribute(Qt::WA_InputMethodEnabled, false);
 
-    // ========== 无缝加载大世界地图 ==========
+    // ========== 初始化游戏引擎 ==========
+    m_engine.Init();
+
+    // ========== 无缝加载大世界地图（同步碰撞数据和实体到引擎）==========
     QString worldPath = QString(PROJECT_DATA_DIR) + "/maps/game.world";
     qDebug() << "开始加载大世界:" << worldPath;
-    QtMapLoader::LoadWorldToScene(worldPath, mapScene);
-    
+    QtMapLoader::LoadWorldToScene(worldPath, mapScene, &m_engine.GetWorldMap());
+
     // 锁死整个大世界地图边界
     mapScene->setSceneRect(mapScene->itemsBoundingRect());
 

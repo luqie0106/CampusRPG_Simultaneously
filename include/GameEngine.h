@@ -224,6 +224,14 @@ public:
     //       InteractableInfo::MakeEnemy(1, {10,15}, "校园混混", Enemy::Bully()));
     void AddMapInteractable(InteractableInfo info);
 
+    // ── 【WorldMap 直接访问】供 QtMapLoader 在地图加载时使用 ──────────
+    // QtMapLoader 通过此接口拿到 WorldMap 引用，用于：
+    //   1. 调用 InitMapSize() 初始化世界格栅
+    //   2. 调用 GetMapSystem().setTile() 同步碰撞数据
+    //   3. 调用 AddInteractable() 注册怪物/NPC/门等实体
+    //   4. 调用 SetSpawnPoint() 设置出生点
+    WorldMap& GetWorldMap();
+
 private:
     GameState                   m_state;
     std::shared_ptr<Character>  m_player;

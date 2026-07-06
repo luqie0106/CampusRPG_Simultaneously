@@ -49,6 +49,11 @@ private:
 public:
     MapSystem(int width = 50, int height = 50);
 
+    // 重置地图尺寸并将所有格子初始化为障碍(1)。
+    // 由 QtMapLoader::LoadWorldToScene 在首次解析时调用；
+    // 随后 setTile(x,y,0) 按 obstruction 层逐格标记可通行区域。
+    void InitMapSize(int width, int height);
+
     void setTile(int x, int y, int type);
 
     bool isWalkable(int tileX, int tileY) const;
