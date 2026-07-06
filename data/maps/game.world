@@ -1,27 +1,6 @@
 {
     "maps": [
         {
-            "fileName": "tileset1.tmj",
-            "height": 640,
-            "width": 640,
-            "x": -80,
-            "y": -16
-        },
-        {
-            "fileName": "tileset2.tmj",
-            "height": 480,
-            "width": 480,
-            "x": 0,
-            "y": 624
-        },
-        {
-            "fileName": "classroom.tmj",
-            "height": 640,
-            "width": 480,
-            "x": 560,
-            "y": -16
-        },
-        {
             "fileName": "classroom1.tmj",
             "height": 640,
             "width": 480,
