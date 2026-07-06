@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QtMapLoader.h"
+#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -76,26 +77,58 @@ MainWindow::MainWindow(QWidget *parent)
                 if (keyA) { dx -= moveSpeed; if(!playerFrames[0].isNull()) player->setPixmap(playerFrames[0]); }
                 if (keyD) { dx += moveSpeed; if(!playerFrames[2].isNull()) player->setPixmap(playerFrames[2]); }
 
-                // ========== 地图边界限制，防止跑出地图 ==========
+                // ========== 碰撞检测与边界限制 ==========
                 QRectF mapRange = mapScene->sceneRect();
                 QRectF playerSize = player->boundingRect();
-                qreal targetX = player->x() + dx;
-                qreal targetY = player->y() + dy;
+                
+                // 1. 临时目标坐标，先应用场景最外层边界限制（平滑贴边）
+                qreal nextX = player->x() + dx;
+                qreal nextY = player->y() + dy;
 
-                // 左右边界限制
-                if(targetX < mapRange.left())
-                    targetX = mapRange.left();
-                if(targetX + playerSize.width() > mapRange.right())
-                    targetX = mapRange.right() - playerSize.width();
+                if(nextX < mapRange.left()) nextX = mapRange.left();
+                if(nextX + playerSize.width() > mapRange.right()) nextX = mapRange.right() - playerSize.width();
+                if(nextY < mapRange.top()) nextY = mapRange.top();
+                if(nextY + playerSize.height() > mapRange.bottom()) nextY = mapRange.bottom() - playerSize.height();
 
-                // 上下边界限制
-                if(targetY < mapRange.top())
-                    targetY = mapRange.top();
-                if(targetY + playerSize.height() > mapRange.bottom())
-                    targetY = mapRange.bottom() - playerSize.height();
+                // 2. 定义角色碰撞箱 (相对于人物左上角偏移和大小)
+                // 取人物偏下方的区域，避免头碰到墙壁就卡住 (基于32x32)
+                qreal colOffsetX = 6;
+                qreal colOffsetY = 16;
+                qreal colWidth = 20;
+                qreal colHeight = 15;
+
+                // 辅助函数：检查指定坐标的碰撞箱是否全部覆盖在Walkable格子上
+                auto checkWalkable = [&](qreal tx, qreal ty) {
+                    qreal tileSize = 16.0;
+                    int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                    int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                    int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                    int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                    int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                    int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+                    int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                    int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+
+                    auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
+                    return mapSys.isWalkable(tlX, tlY) &&
+                           mapSys.isWalkable(trX, trY) &&
+                           mapSys.isWalkable(blX, blY) &&
+                           mapSys.isWalkable(brX, brY);
+                };
+
+                // 3. 滑动碰撞逻辑：分别验证 X 轴和 Y 轴
+                qreal finalX = player->x();
+                qreal finalY = player->y();
+
+                if (nextX != player->x() && checkWalkable(nextX, player->y())) {
+                    finalX = nextX;
+                }
+                if (nextY != player->y() && checkWalkable(finalX, nextY)) {
+                    finalY = nextY;
+                }
 
                 // 赋值限制后的坐标
-                player->setPos(targetX, targetY);
+                player->setPos(finalX, finalY);
 
                 // 镜头跟随玩家居中
                 view->centerOn(player);

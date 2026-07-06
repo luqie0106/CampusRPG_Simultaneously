@@ -42,8 +42,8 @@
             "scale": 0.75,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 239.33333333333337,
-                "y": 320
+                "x": 240,
+                "y": 319.3333333333333
             }
         },
         "classroom1.tmj#Interiors_free_16x16": {
@@ -65,7 +65,7 @@
             "scale": 0.6083,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 898.4053920762782,
+                "x": 899.2273549235574,
                 "y": 669.8997205326319
             }
         },
@@ -81,12 +81,38 @@
         "classroom2.tmj#tiles and items": {
             "scaleInDock": 1
         },
+        "corridor.json": {
+            "scale": 1.04203125,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 319.5681511470985,
+                "y": 320.0479832058779
+            }
+        },
+        "corridor.json#Interiors_free_16x16": {
+            "scaleInDock": 1
+        },
+        "corridor.json#Room_Builder_free_16x16": {
+            "scaleInDock": 1
+        },
+        "corridor.json#Tileset Spring": {
+            "scaleInDock": 1
+        },
+        "corridor.json#Tileset_16x16_9": {
+            "scaleInDock": 1
+        },
+        "corridor.json#buch-outdoor": {
+            "scaleInDock": 1
+        },
+        "corridor.json#tiles and items": {
+            "scaleInDock": 1
+        },
         "corridor.tmj": {
             "scale": 0.75,
             "selectedLayer": 0,
             "viewCenter": {
                 "x": 319.33333333333337,
-                "y": 320
+                "y": 319.3333333333333
             }
         },
         "corridor.tmj#Interiors_free_16x16": {
@@ -110,14 +136,14 @@
         },
         "dormitory.tmj": {
             "expandedObjectLayers": [
-                5,
-                6
+                6,
+                5
             ],
             "scale": 0.75,
             "selectedLayer": 0,
             "viewCenter": {
                 "x": 399.33333333333337,
-                "y": 479.99999999999994
+                "y": 479.3333333333333
             }
         },
         "dormitory.tmj#Fence's copiar": {
@@ -149,8 +175,8 @@
             "scale": 0.75,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 676.6666666666667,
-                "y": 1534.6666666666665
+                "x": 800.6666666666666,
+                "y": 471.3333333333333
             }
         },
         "forest.tmj#1": {
@@ -190,11 +216,11 @@
             "scaleInDock": 1
         },
         "office.tmj": {
-            "scale": 0.6083,
+            "scale": 1.6072,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 337.82673023179353,
-                "y": 29.590662502054897
+                "x": 234.56943753111,
+                "y": 179.5047287207566
             }
         },
         "office.tmj#Interiors_free_16x16": {
@@ -215,7 +241,7 @@
             "selectedLayer": 0,
             "viewCenter": {
                 "x": 800.6666666666666,
-                "y": 479.99999999999994
+                "y": 479.3333333333333
             }
         },
         "outside.tmj#Interiors_free_16x16": {
@@ -253,7 +279,7 @@
             "selectedLayer": 0,
             "viewCenter": {
                 "x": 239.33333333333337,
-                "y": 240
+                "y": 239.33333333333331
             }
         },
         "shop.tmj#Fence's copiar": {
@@ -323,7 +349,7 @@
     },
     "last.exportedFilePath": "D:/CampusRPG/assets/maps",
     "loadedWorlds": [
-        "D:/CampusRPG/assets/maps/game.world"
+        "/Users/hualaiwu/Documents/CampusRPG/data/maps/game.world"
     ],
     "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
     "openFiles": [
@@ -334,7 +360,8 @@
         "office.tmj",
         "classroom2.tmj",
         "dormitory.tmj",
-        "shop.tmj"
+        "shop.tmj",
+        "corridor.json"
     ],
     "project": "game.tiled-project",
     "property.type": "int",
@@ -343,6 +370,7 @@
         "classroom1.tmj",
         "corridor.tmj",
         "outside.tmj",
+        "corridor.json",
         "shop.tmj",
         "dormitory.tmj",
         "classroom2.tmj",
