@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/RNG.h"
 
 namespace RNG {

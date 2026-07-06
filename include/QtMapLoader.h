@@ -1,8 +1,6 @@
-#ifndef QTMAPLOADER_H
-#define QTMAPLOADER_H
+#pragma once
 
-#include <QString>
-#include <QGraphicsScene>
+#include "Common.h"
 
 class QtMapLoader {
 public:
@@ -13,5 +11,3 @@ public:
     // 解析 Tiled 导出的 .world 文件，将其中包含的所有子地图加载到同一个 QGraphicsScene 中实现无缝拼接
     static void LoadWorldToScene(const QString& worldJsonPath, QGraphicsScene* scene);
 };
-
-#endif // QTMAPLOADER_H

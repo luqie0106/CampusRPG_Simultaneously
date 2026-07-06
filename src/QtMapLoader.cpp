@@ -1,12 +1,6 @@
-#include "QtMapLoader.h"
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QGraphicsPixmapItem>
-#include <QPixmap>
-#include <QDebug>
+#include "Common.h"
 
+#include "QtMapLoader.h"
 void QtMapLoader::LoadMapToScene(const QString& jsonPath, QGraphicsScene* scene, int offsetX, int offsetY) {
     if (!scene) return;
 

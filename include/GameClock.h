@@ -1,10 +1,8 @@
 #pragma once
-#include "GameTime.h"
-#include <thread>
-#include <mutex>
-#include <atomic>
-#include <functional>
 
+#include "Common.h"
+
+#include "GameTime.h"
 // ─────────────────────────────────────────────────────────────────────────────
 // GameClock — 游戏时间后台线程
 //

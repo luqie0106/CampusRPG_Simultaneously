@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/Character.h"
 #include "../include/Exceptions.h"
 

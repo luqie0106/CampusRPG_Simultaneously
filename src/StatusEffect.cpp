@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/StatusEffect.h"
 
 StatusEffect::StatusEffect(StatusEffectType t, int val, int rounds)

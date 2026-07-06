@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/Map.h"
 
 GamePoint::GamePoint() : x(0), y(0) {}

@@ -1,13 +1,8 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
-#include <QGraphicsScene>
-#include <QGraphicsView>
-#include <QMainWindow>
-#include <QGraphicsRectItem>
-#include <QKeyEvent>
-#include <QTimer>
-#include <QPointF>  // 新增：切换地图函数需要QPointF类型
+#include "Common.h"
+
+  // 新增：切换地图函数需要QPointF类型
 
 namespace Ui {
 class MainWindow;
@@ -45,4 +40,3 @@ private:
     QTimer *moveTimer;
 };
 
-#endif // MAINWINDOW_H

@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/GameEngine.h"
 #include "../include/Exceptions.h"
 #include "../include/RNG.h"

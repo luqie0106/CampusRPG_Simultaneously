@@ -1,13 +1,6 @@
 #pragma once
 
-#include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QDebug>
-#include <QString>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include "Common.h"
 
 // 前向声明：避免循环依赖（SaveSys.h 不需要 Character 完整定义）
 class Character;

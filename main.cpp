@@ -1,10 +1,9 @@
+#include "Common.h"
+
 // main.cpp — 控制台驱动层（Console UI）
 // 未来接入 Qt 后，此文件可直接替换为 Qt 的 main.cpp，
 // GameEngine 本身无需任何改动。
 #include "include/GameEngine.h"
-#include <iostream>
-#include <limits>
-
 // ──────────────────────────────────────────────────────────────
 // SafeInputInt — 安全整数输入辅助函数
 //   • 遇到非法字符（字母、特殊符号）时清空输入流并重新提示
@@ -145,7 +144,6 @@ int main() {
                 }
             }
 
-
         // ── 战斗界面 ──────────────────────────────────
         } else if (engine.GetState() == GameState::Battle) {
             // 展示当前敌人信息
@@ -207,8 +205,6 @@ int main() {
 // Qt GUI 时代的入口：替换掉原先的黑框框控制台循环
 // ==========================================================
 #include "mainwindow.h"
-#include <QApplication>
-
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     MainWindow w;

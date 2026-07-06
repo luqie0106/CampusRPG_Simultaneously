@@ -2,7 +2,6 @@
 
 #include "Common.h"
 
-
 class GameException : public std::exception {
 protected:
     std::string message;

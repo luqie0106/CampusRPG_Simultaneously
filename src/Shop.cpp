@@ -1,8 +1,8 @@
+#include "Common.h"
+
 #include "../include/Shop.h"
 #include "../include/Exceptions.h"
 #include "../include/RNG.h"
-#include <algorithm>
-
 Shop::Shop() {
     InitShopItems();
 }

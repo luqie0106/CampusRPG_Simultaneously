@@ -1,10 +1,7 @@
+#include "Common.h"
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QBrush>
-#include <QColor>
-#include <QFile>
-#include <QDebug>
-#include <QThread>
 #include "QtMapLoader.h"
 
 MainWindow::MainWindow(QWidget *parent)

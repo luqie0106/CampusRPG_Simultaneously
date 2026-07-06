@@ -1,8 +1,8 @@
+#include "Common.h"
+
 #include "../include/Enemy.h"
 #include "../include/Character.h"
 #include "../include/RNG.h"
-#include <cmath>
-
 // maxStaggerPoints 传 0 即为无韧度小怪；staggerDuration 为 Boss 瘫痪回合数
 Enemy::Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
     double maxStaggerPoints, int staggerDuration,

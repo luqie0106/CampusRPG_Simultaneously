@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/BlackMarket.h"
 #include "../include/Exceptions.h"
 

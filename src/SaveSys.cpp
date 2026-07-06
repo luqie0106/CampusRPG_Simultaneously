@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/SaveSys.h"
 #include "../include/Character.h"  // 需要完整定义以访问 GetBackpack() 等
 #include "../include/Exceptions.h"

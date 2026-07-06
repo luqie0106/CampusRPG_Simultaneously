@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "../include/Item.h"
 
 Item::Item(std::string name, int value) : name(name), value(value) {}

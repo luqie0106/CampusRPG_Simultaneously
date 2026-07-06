@@ -1,3 +1,5 @@
+#include "Common.h"
+
 #include "Backpack.h"
 #include "../include/Character.h"   // 完整定义，UseItem 需要调用 Character 的方法
 #include "../include/Exceptions.h"
