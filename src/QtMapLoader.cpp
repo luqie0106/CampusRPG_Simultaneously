@@ -486,10 +486,7 @@ void QtMapLoader::LoadWorldToScene(const QString& worldJsonPath,
         QJsonObject mapItem = mapsArray[i].toObject();
         QString fileName = mapItem["fileName"].toString();
 
-        // Tiled 导出 .tmj，我们用的是 .json 副本
-        if (fileName.endsWith(".tmj")) {
-            fileName.replace(".tmj", ".json");
-        }
+
 
         QString mapPath = QString(PROJECT_DATA_DIR) + "/maps/" + fileName;
         if (!QFile::exists(mapPath)) {
