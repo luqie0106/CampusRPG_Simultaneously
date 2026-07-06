@@ -63,7 +63,10 @@ MainWindow::MainWindow(QWidget *parent)
     }
     player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
-    player->setPos(0, -200); // 初始出生坐标 (在 outside 的安全区域)
+    
+    // 获取真实出生点并换算为像素坐标 (瓦片大小默认 16)
+    GamePoint spawnPoint = m_engine.GetWorldMap().GetSpawnPoint();
+    player->setPos(spawnPoint.x * 16.0, spawnPoint.y * 16.0);
 
     // 移动定时器 16ms刷新一次（60帧）
     moveTimer = new QTimer(this);
