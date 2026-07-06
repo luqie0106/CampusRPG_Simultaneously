@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include <functional>
 
 // 1. 纯 C++ 结构体替代 QPoint
 struct GamePoint {
@@ -61,5 +62,5 @@ public:
     // ========================================================
     // 🌟 纯 STL 版 A* 寻路算法（完整实现）
     // ========================================================
-    std::vector<GamePoint> findPath(GamePoint start, GamePoint end);
+    std::vector<GamePoint> findPath(GamePoint start, GamePoint end, std::function<bool(int, int)> checkValid = nullptr);
 };

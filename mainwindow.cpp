@@ -5,6 +5,8 @@
 #include "QtMapLoader.h"
 #include "ShopWindow.h"
 #include <QLabel>
+#include <QMenu>
+#include <QMouseEvent>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -21,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_canEnterShop = false;
     m_shopPromptLabel = nullptr;
     m_shopWindow = nullptr;
+    currentPathIndex = 0;
 
     // 商店柜台在世界坐标中的中心位置 (上方货柜附近)
     shopCabinetCenter = QPointF(396, 1280);
@@ -36,6 +39,17 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFocusPolicy(Qt::StrongFocus);
     view->setFocusPolicy(Qt::NoFocus);
     this->setAttribute(Qt::WA_InputMethodEnabled, false);
+
+    // 事件过滤器，用于处理右键寻路
+    view->viewport()->installEventFilter(this);
+
+    // 初始化全屏大地图
+    bigMapView = new QGraphicsView(mapScene, this);
+    bigMapView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    bigMapView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    bigMapView->setFocusPolicy(Qt::NoFocus);
+    bigMapView->viewport()->installEventFilter(this);
+    bigMapView->hide();
 
     // 悬浮提示框
     m_shopPromptLabel = new QLabel("[F] 进入商店", this);
@@ -110,11 +124,52 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 int dx = 0;
                 int dy = 0;
+                // 检查按键中断自动寻路
+                if (keyW || keyS || keyA || keyD) {
+                    autoPath.clear();
+                }
+
                 // 计算移动偏移并更新人物朝向
-                if (keyW) { dy -= moveSpeed; if(!playerFrames[currentCharacter][1].isNull()) player->setPixmap(playerFrames[currentCharacter][1]); }
-                if (keyS) { dy += moveSpeed; if(!playerFrames[currentCharacter][3].isNull()) player->setPixmap(playerFrames[currentCharacter][3]); }
-                if (keyA) { dx -= moveSpeed; if(!playerFrames[currentCharacter][0].isNull()) player->setPixmap(playerFrames[currentCharacter][0]); }
-                if (keyD) { dx += moveSpeed; if(!playerFrames[currentCharacter][2].isNull()) player->setPixmap(playerFrames[currentCharacter][2]); }
+                if (!autoPath.empty() && currentPathIndex < autoPath.size()) {
+                    // 自动寻路移动
+                    GamePoint targetPoint = autoPath[currentPathIndex];
+                    // 目标像素为瓦片中心
+                    QPointF targetPx(targetPoint.x * 16.0 + 8.0, targetPoint.y * 16.0 + 8.0);
+                    
+                    // 以玩家 logicalPos 计算方向
+                    qreal diffX = targetPx.x() - playerLogicalPos.x();
+                    qreal diffY = targetPx.y() - playerLogicalPos.y();
+                    qreal dist = std::sqrt(diffX * diffX + diffY * diffY);
+
+                    if (dist <= moveSpeed) {
+                        // 已经很接近当前节点，切换到下一个
+                        currentPathIndex++;
+                        if (currentPathIndex >= autoPath.size()) {
+                            autoPath.clear();
+                        }
+                    } else {
+                        // 按比例移动
+                        qreal moveDistX = (diffX / dist) * moveSpeed;
+                        qreal moveDistY = (diffY / dist) * moveSpeed;
+                        dx = static_cast<int>(std::round(moveDistX));
+                        dy = static_cast<int>(std::round(moveDistY));
+
+                        // 更新朝向
+                        if (std::abs(dx) > std::abs(dy)) {
+                            if (dx > 0 && !playerFrames[currentCharacter][2].isNull()) player->setPixmap(playerFrames[currentCharacter][2]);
+                            else if (dx < 0 && !playerFrames[currentCharacter][0].isNull()) player->setPixmap(playerFrames[currentCharacter][0]);
+                        } else {
+                            if (dy > 0 && !playerFrames[currentCharacter][3].isNull()) player->setPixmap(playerFrames[currentCharacter][3]);
+                            else if (dy < 0 && !playerFrames[currentCharacter][1].isNull()) player->setPixmap(playerFrames[currentCharacter][1]);
+                        }
+                    }
+                } else {
+                    // 手动移动
+                    if (keyW) { dy -= moveSpeed; if(!playerFrames[currentCharacter][1].isNull()) player->setPixmap(playerFrames[currentCharacter][1]); }
+                    if (keyS) { dy += moveSpeed; if(!playerFrames[currentCharacter][3].isNull()) player->setPixmap(playerFrames[currentCharacter][3]); }
+                    if (keyA) { dx -= moveSpeed; if(!playerFrames[currentCharacter][0].isNull()) player->setPixmap(playerFrames[currentCharacter][0]); }
+                    if (keyD) { dx += moveSpeed; if(!playerFrames[currentCharacter][2].isNull()) player->setPixmap(playerFrames[currentCharacter][2]); }
+                }
 
                 // ========== 碰撞检测与边界限制 ==========
                 QRectF mapRange = mapScene->sceneRect();
@@ -239,6 +294,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_shopPromptLabel->hide();
         }
         break;
+    case Qt::Key_M:
+        if (bigMapView->isVisible()) {
+            bigMapView->hide();
+        } else {
+            bigMapView->setGeometry(view->geometry());
+            bigMapView->show();
+            bigMapView->raise();
+            bigMapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
+        }
+        break;
     default:
         QMainWindow::keyPressEvent(event);
         break;
@@ -258,4 +323,113 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
         QMainWindow::keyReleaseEvent(event);
         break;
     }
+}
+
+// 事件过滤器，处理鼠标点击寻路
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        
+        // 主视图的右键点击
+        if (obj == view->viewport() && mouseEvent->button() == Qt::RightButton) {
+            QPointF scenePos = view->mapToScene(mouseEvent->pos());
+            int targetX = scenePos.x() / 16.0;
+            int targetY = scenePos.y() / 16.0;
+
+            QMenu menu;
+            QAction *goAction = menu.addAction("前往");
+            QAction *selectedAction = menu.exec(mouseEvent->globalPosition().toPoint());
+
+            if (selectedAction == goAction) {
+                int startX = playerLogicalPos.x() / 16.0;
+                int startY = playerLogicalPos.y() / 16.0;
+                
+                auto checkNodeValid = [&](int x, int y) {
+                    qreal targetPx_x = x * 16.0 + 8.0;
+                    qreal targetPx_y = y * 16.0 + 8.0;
+                    qreal tx = targetPx_x - player->boundingRect().width() / 2.0;
+                    qreal ty = targetPx_y - player->boundingRect().height();
+
+                    qreal spriteW = player->boundingRect().width();
+                    qreal spriteH = player->boundingRect().height();
+                    qreal colOffsetX = spriteW * 6.0 / 32.0;
+                    qreal colOffsetY = spriteH * 16.0 / 32.0;
+                    qreal colWidth = spriteW * 20.0 / 32.0;
+                    qreal colHeight = spriteH * 15.0 / 32.0;
+
+                    qreal tileSize = 16.0;
+                    int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                    int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                    int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                    int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                    int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                    int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+                    int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                    int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+
+                    auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
+                    return mapSys.isWalkable(tlX, tlY) &&
+                           mapSys.isWalkable(trX, trY) &&
+                           mapSys.isWalkable(blX, blY) &&
+                           mapSys.isWalkable(brX, brY);
+                };
+
+                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
+                if (!path.empty()) {
+                    autoPath = path;
+                    currentPathIndex = 0;
+                }
+            }
+            return true; // 拦截事件
+        }
+        // 大地图的左键点击
+        else if (obj == bigMapView->viewport() && mouseEvent->button() == Qt::LeftButton) {
+            QPointF scenePos = bigMapView->mapToScene(mouseEvent->pos());
+            int targetX = scenePos.x() / 16.0;
+            int targetY = scenePos.y() / 16.0;
+
+            int startX = playerLogicalPos.x() / 16.0;
+            int startY = playerLogicalPos.y() / 16.0;
+            
+            auto checkNodeValid = [&](int x, int y) {
+                qreal targetPx_x = x * 16.0 + 8.0;
+                qreal targetPx_y = y * 16.0 + 8.0;
+                qreal tx = targetPx_x - player->boundingRect().width() / 2.0;
+                qreal ty = targetPx_y - player->boundingRect().height();
+
+                qreal spriteW = player->boundingRect().width();
+                qreal spriteH = player->boundingRect().height();
+                qreal colOffsetX = spriteW * 6.0 / 32.0;
+                qreal colOffsetY = spriteH * 16.0 / 32.0;
+                qreal colWidth = spriteW * 20.0 / 32.0;
+                qreal colHeight = spriteH * 15.0 / 32.0;
+
+                qreal tileSize = 16.0;
+                int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+                int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+                int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+                int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+                int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+
+                auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
+                return mapSys.isWalkable(tlX, tlY) &&
+                       mapSys.isWalkable(trX, trY) &&
+                       mapSys.isWalkable(blX, blY) &&
+                       mapSys.isWalkable(brX, brY);
+            };
+
+            auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
+            if (!path.empty()) {
+                autoPath = path;
+                currentPathIndex = 0;
+                bigMapView->hide(); // 寻路成功后关闭大地图
+            }
+            return true; // 拦截事件
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }

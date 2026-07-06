@@ -5,6 +5,8 @@
 
 class ShopWindow;
 class QLabel;
+class QGraphicsView;
+class QGraphicsScene;
 
 namespace Ui {
 class MainWindow;
@@ -24,10 +26,14 @@ protected:
     // 键盘松开事件声明
     void keyReleaseEvent(QKeyEvent *event) override;
 
+    // 事件过滤器，用于处理鼠标点击事件
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *mapScene;
     QGraphicsView *view;
+    QGraphicsView *bigMapView; // 全屏大地图视图
 
     // 玩家贴图对象
     QGraphicsPixmapItem *player;
@@ -46,6 +52,10 @@ private:
     bool keyD;
     // 刷新移动定时器
     QTimer *moveTimer;
+
+    // 自动寻路状态
+    std::vector<GamePoint> autoPath;
+    size_t currentPathIndex;
 
     // 游戏引擎实例（持有 WorldMap、碰撞数据、玩家状态等）
     GameEngine m_engine;

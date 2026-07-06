@@ -58,11 +58,17 @@ bool MapSystem::isWalkable(int tileX, int tileY) const {
     return mapData[tileY][tileX] == 0;
 }
 
-std::vector<GamePoint> MapSystem::findPath(GamePoint start, GamePoint end) {
+std::vector<GamePoint> MapSystem::findPath(GamePoint start, GamePoint end, std::function<bool(int, int)> checkValid) {
     std::vector<GamePoint> path;
 
+    auto isValidNode = [&](int x, int y) {
+        if (!isValid(x, y)) return false;
+        if (checkValid) return checkValid(x, y);
+        return true;
+    };
+
     // 边界情况判断
-    if (!isValid(start.x, start.y) || !isValid(end.x, end.y)) {
+    if (!isValidNode(start.x, start.y) || !isValidNode(end.x, end.y)) {
         return path; 
     }
     if (start == end) {
@@ -123,7 +129,7 @@ std::vector<GamePoint> MapSystem::findPath(GamePoint start, GamePoint end) {
             int nextY = curPos.y + dir.y;
 
             // 邻居必须合法且未在 Close List 中
-            if (isValid(nextX, nextY) && !closedList[nextY][nextX]) {
+            if (isValidNode(nextX, nextY) && !closedList[nextY][nextX]) {
                 int tentativeG = current->g + 1; // 假设移动代价为 1
 
                 // 如果找到了更短的到达该格子的路径
