@@ -1,5 +1,5 @@
 {
-    "activeFile": "forest.tmj",
+    "activeFile": "office.tmj",
     "expandedProjectPaths": [
         "."
     ],
@@ -190,11 +190,11 @@
             "scaleInDock": 1
         },
         "office.tmj": {
-            "scale": 0.75,
+            "scale": 0.6083,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 239.33333333333337,
-                "y": 240
+                "x": 337.82673023179353,
+                "y": 29.590662502054897
             }
         },
         "office.tmj#Interiors_free_16x16": {
@@ -339,14 +339,14 @@
     "project": "game.tiled-project",
     "property.type": "int",
     "recentFiles": [
+        "forest.tmj",
+        "classroom1.tmj",
+        "corridor.tmj",
+        "outside.tmj",
         "shop.tmj",
         "dormitory.tmj",
         "classroom2.tmj",
         "office.tmj",
-        "outside.tmj",
-        "corridor.tmj",
-        "classroom1.tmj",
-        "forest.tmj",
         "tileset1.tmj",
         "classroom.tmj",
         "tileset2.tmj"
