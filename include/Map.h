@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include <functional>
 
 // 1. 纯 C++ 结构体替代 QPoint
 struct GamePoint {

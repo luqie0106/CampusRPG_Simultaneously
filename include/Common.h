@@ -54,3 +54,7 @@
 #include <thread>
 #include <vector>
 #include <unordered_set>
+
+// Auto-extracted Standard Libraries
+#include <QMenu>
+#include <QMouseEvent>

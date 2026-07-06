@@ -4,10 +4,6 @@
 #include "ui_mainwindow.h"
 #include "QtMapLoader.h"
 #include "ShopWindow.h"
-#include <QLabel>
-#include <QMenu>
-#include <QMouseEvent>
-#include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

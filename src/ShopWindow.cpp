@@ -1,11 +1,5 @@
 #include "Common.h"
 #include "../include/ShopWindow.h"
-#include <QDir>
-#include <QFileInfo>
-#include <QScrollArea>
-#include <QGridLayout>
-#include <QPushButton>
-#include <QMessageBox>
 
 ShopWindow::ShopWindow(GameEngine *engine, QWidget *parent)
     : QWidget(parent), m_engine(engine) {
