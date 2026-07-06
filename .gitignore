@@ -37,3 +37,6 @@ CMakeUserPresets.json
 
 # 排除 .cache 文件夹
 .cache/
+
+# 排除自动整理头文件的脚本
+refactor_includes.py
