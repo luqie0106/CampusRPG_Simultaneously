@@ -9,9 +9,6 @@ namespace Ui {
 class MainWindow;
 }
 
-#include <QGraphicsPixmapItem>
-#include <QPixmap>
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT

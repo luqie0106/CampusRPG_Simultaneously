@@ -1,8 +1,7 @@
 #include "Common.h"
-#include <QFileInfo>
-
 #include "QtMapLoader.h"
 #include "Enemy.h"
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 静态 Tileset 图片缓存：避免重复加载同一张大图
@@ -20,14 +19,7 @@ static QString resolveImagePath(const QString& rawPath) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 判断图层名是否为碰撞层（含 "obstruction"，大小写不敏感）
-// ─────────────────────────────────────────────────────────────────────────────
-static bool isObstructionLayer(const QString& layerName) {
-    return layerName.contains(QStringLiteral("obstruction"), Qt::CaseInsensitive);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 从 Tiled 对象的 properties 数组中按名称查找属性值
+// 从 Tiled properties 数组中按名称查找属性值
 // ─────────────────────────────────────────────────────────────────────────────
 static QJsonValue getProperty(const QJsonArray& properties, const QString& name) {
     for (int i = 0; i < properties.size(); ++i) {
@@ -225,6 +217,9 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
         int     spacing;    // tile 间距（像素）
         int     margin;     // 图片边距（像素）
         QPixmap image;      // 完整 tileset 大图
+        // 该 tileset 中标记了 "solid": true 的瓦片 localId 集合
+        // 用于在 processTile 中判断该格子是否为障碍物
+        std::unordered_set<int> solidTiles;
     };
     QList<TilesetInfo> tilesets;
 
@@ -272,6 +267,24 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
         }
         ts.image = s_pixmapCache[imagePath];
 
+        // ── 解析 solid 瓦片属性 ────────────────────────────────────────────
+        // Tiled 在 tileset 的 "tiles" 数组中存储各瓦片的自定义属性。
+        // 若某瓦片有 "solid": true，则将其 localId 记入 solidTiles 集合。
+        // processTile 渲染时检查 localId，若存在则标记 MapSystem 对应格子为障碍(1)。
+        QJsonArray tilesArr = tsObj["tiles"].toArray();
+        for (int ti = 0; ti < tilesArr.size(); ++ti) {
+            QJsonObject tileObj = tilesArr[ti].toObject();
+            QJsonArray  tileProps = tileObj["properties"].toArray();
+            for (int pi = 0; pi < tileProps.size(); ++pi) {
+                QJsonObject prop = tileProps[pi].toObject();
+                if (prop["name"].toString() == QStringLiteral("solid") &&
+                    prop["value"].toBool(false)) {
+                    ts.solidTiles.insert(tileObj["id"].toInt());
+                    break;
+                }
+            }
+        }
+
         if (!ts.image.isNull()) {
             tilesets.append(ts);
         }
@@ -300,8 +313,6 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
         if (layerType != QStringLiteral("tilelayer")) continue;
         if (!layerObj["visible"].toBool(true)) continue; // 跳过隐藏层
 
-        bool isObstruction = isObstructionLayer(layerName);
-
         // ── Tiled 翻转标志（高3位）──────────────────────────────────────────
         // bit31: 水平翻转, bit30: 垂直翻转, bit29: 对角翻转（90°旋转）
         constexpr quint32 FLAG_FLIP_H = 0x80000000u;
@@ -312,19 +323,13 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
         // 统一为 (localX, localY, rawTileId) 三元组处理
         auto processTile = [&](int lx, int ly, int rawTileId) {
 
-            // ── 碰撞同步（obstruction 层）──────────────────────────────────
-            // 对 obstruction 层的每个格子，都需要写入 MapSystem：
-            //   tileId != 0 → 此格有障碍瓦片 → setTile(1)（保持障碍）
-            //   tileId == 0 → 此格无瓦片 → setTile(0)（开通可行走）
-            // 这样子地图覆盖区域的可行走性完全由 obstruction 层决定。
-            if (isObstruction && worldMap) {
-                int wx = tileOffsetX + lx;
-                int wy = tileOffsetY + ly;
-                worldMap->GetMapSystem().setTile(wx, wy, rawTileId != 0 ? 1 : 0);
-            }
+            // ── 碰撞同步（基于 solid 瓦片属性）──────────────────────────────
+            // 任意图层上，只要瓦片的 localId 在该 tileset 的 solidTiles 集合中，
+            // 该格子就标记为障碍(1)。setTile 是覆盖写入，多层叠加时只要有一层
+            // 存在 solid 瓦片该格子就永久为障碍，不会被其他层的空格覆盖归零。
+            // 注意：碰撞写入在渲染之前，避免空格早退 return 导致漏写。
 
-            // ── 渲染（只渲染非空瓦片）─────────────────────────────────────
-            if (rawTileId == 0) return; // 0 = 空格，无需渲染
+            if (rawTileId == 0) return; // 0 = 空格，无需渲染也无需写碰撞
 
             // 解析翻转标志，提取真实 GID
             quint32 raw = static_cast<quint32>(rawTileId);
@@ -338,6 +343,16 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
             for (const TilesetInfo& ts : tilesets) {
                 if (tileId >= ts.firstGid) {
                     int localId = tileId - ts.firstGid;
+
+                    // ── solid 属性碰撞写入 ────────────────────────────────
+                    // 只要 localId 在 solidTiles 中，无论该格子属于哪个图层，
+                    // 都将世界格子标记为障碍(1)。
+                    if (worldMap && !ts.solidTiles.empty() &&
+                        ts.solidTiles.count(localId)) {
+                        int wx = tileOffsetX + lx;
+                        int wy = tileOffsetY + ly;
+                        worldMap->GetMapSystem().setTile(wx, wy, 1);
+                    }
 
                     // 计算在 tileset 大图里的像素坐标（考虑 margin/spacing）
                     int col  = localId % ts.columns;

@@ -23,6 +23,7 @@
 #include <QString>
 #include <QThread>
 #include <QTimer>
+#include <QFileInfo>
 
 // C++ Standard Library Includes
 #include <algorithm>
@@ -43,3 +44,4 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <unordered_set>

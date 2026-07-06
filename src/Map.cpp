@@ -41,12 +41,10 @@ MapSystem::MapSystem(int width, int height) : mapWidth(width), mapHeight(height)
 void MapSystem::InitMapSize(int width, int height) {
     mapWidth  = width;
     mapHeight = height;
-    // 全部初始化为障碍(1)。
-    // QtMapLoader 随后对子地图内的每个格子：
-    //   - obstruction 层为空 (tileId==0) → setTile(x,y,0) 开通
-    //   - obstruction 层非空            → 保持 1（屏蔽）
-    //   - 子地图未覆盖的空隙区域   → 保持 1（天然刑刀）
-    mapData.assign(mapHeight, std::vector<int>(mapWidth, 1));
+    // 默认全部初始化为可行走(0)。
+    // 越界保护已由 isWalkable() 的边界检查处理。
+    // QtMapLoader 随后对每个含 solid 属性的瓦片格子调用 setTile(x,y,1) 标记障碍。
+    mapData.assign(mapHeight, std::vector<int>(mapWidth, 0));
 }
 
 void MapSystem::setTile(int x, int y, int type) {
