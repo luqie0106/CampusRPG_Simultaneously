@@ -118,6 +118,9 @@ public:
     // 将玩家坐标重置到当前出生点（新游戏开始 / 死亡复活后可调用）
     void ResetPlayerToSpawn();
 
+    // 直接设置玩家当前坐标（用于读档时恢复位置）
+    void SetPlayerPos(GamePoint point);
+
     // ── 地图数据访问 ──────────────────────────────────────────────────
     // 地图同学通过此方法拿到 MapSystem，调用 setTile() 布置障碍 / 地形
     MapSystem& GetMapSystem();

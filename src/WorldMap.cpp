@@ -91,6 +91,10 @@ void WorldMap::ResetPlayerToSpawn() {
     m_playerPos = m_spawnPoint;
 }
 
+void WorldMap::SetPlayerPos(GamePoint point) {
+    m_playerPos = point;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 地图数据访问
 // ─────────────────────────────────────────────────────────────────────────────

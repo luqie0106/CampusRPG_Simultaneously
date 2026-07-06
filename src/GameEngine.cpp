@@ -3,6 +3,7 @@
 #include "../include/GameEngine.h"
 #include "../include/Exceptions.h"
 #include "../include/RNG.h"
+#include "../include/SaveSys.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 构造 / 析构
@@ -309,14 +310,37 @@ std::string GameEngine::SellBackpackItem(int backpackIndex) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 std::string GameEngine::SaveGame() {
-    // TODO: 接入 SaveSys 实现后替换占位文本
-    return "存档保存中…（功能开发中）\n";
+    if (!m_player) return "错误：尚未创建角色，无法保存。\n";
+    try {
+        SaveSys saver;
+        saver.initDatabase();
+        saver.savePlayer(*m_player, m_worldMap.GetPlayerPos(), m_clock.GetTime());
+        return "存档成功！(" + m_player->GetName() + ")\n";
+    } catch (const std::exception& e) {
+        return std::string("存档失败：") + e.what() + "\n";
+    }
 }
 
 std::string GameEngine::LoadGame() {
-    // TODO: 接入 SaveSys 实现后替换占位文本
-    // 成功读档后应设置 m_player 并将 m_state 切换到 InGame
-    return "读取存档中…（功能开发中）\n";
+    try {
+        SaveSys saver;
+        saver.initDatabase();
+
+        std::shared_ptr<Character> loadedPlayer;
+        GamePoint pos;
+        GameTime time;
+        if (saver.loadLatestSave(loadedPlayer, pos, time)) {
+            m_player = loadedPlayer;
+            m_worldMap.SetPlayerPos(pos);
+            m_clock.SetTime(time);
+            m_state = GameState::InGame;
+            return "读档成功！欢迎回来，" + m_player->GetName() + "。\n";
+        } else {
+            return "没有找到任何存档记录。\n";
+        }
+    } catch (const std::exception& e) {
+        return std::string("读档失败：") + e.what() + "\n";
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

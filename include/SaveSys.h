@@ -2,6 +2,10 @@
 
 #include "Common.h"
 
+#include "Map.h"
+#include "GameTime.h"
+#include <memory>
+
 // 前向声明：避免循环依赖（SaveSys.h 不需要 Character 完整定义）
 class Character;
 
@@ -22,11 +26,11 @@ public:
     // 初始化建表（CREATE TABLE IF NOT EXISTS）
     bool initDatabase();
 
-    // 保存玩家存档（INSERT OR REPLACE）
+    // 保存玩家存档（包含坐标和时间）
     // 调用前需保证 initDatabase() 已成功执行
-    bool savePlayer(const Character& player);
+    bool savePlayer(const Character& player, const GamePoint& pos, const GameTime& time);
 
-    // 读取玩家存档，成功时返回 true 并填充 player
-    // player 须已构造（如 Steve/Athlete/Nerd），函数只覆盖可序列化字段
-    bool loadPlayer(Character& player);
+    // 读取最新存档
+    // 自动根据数据库中的 classType 构造对应职业的角色实例，并恢复坐标和时间
+    bool loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& outPos, GameTime& outTime);
 };

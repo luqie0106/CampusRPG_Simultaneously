@@ -41,6 +41,12 @@ GameTime GameClock::GetTime() const {
     return m_time;
 }
 
+void GameClock::SetTime(const GameTime& t) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_time = t;
+    m_wasNight = m_time.IsNight();
+}
+
 bool GameClock::IsNight() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_time.IsNight();

@@ -40,6 +40,9 @@ public:
     // 线程安全地读取当前游戏时间快照
     GameTime GetTime() const;
 
+    // 线程安全地设置当前游戏时间（读档时使用）
+    void SetTime(const GameTime& t);
+
     // 线程安全地查询当前是否为夜晚
     bool IsNight() const;
 
