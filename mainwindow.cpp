@@ -3,8 +3,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QtMapLoader.h"
-#include "ShopDialog.h"
 #include "ShopWindow.h"
+#include <QLabel>
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -18,12 +18,12 @@ MainWindow::MainWindow(QWidget *parent)
     keyS = false;
     keyD = false;
     currentCharacter = 0;
-    shopDialogActive = false;
-    m_shopDialog = nullptr;
+    m_canEnterShop = false;
+    m_shopPromptLabel = nullptr;
     m_shopWindow = nullptr;
 
-    // 商店青色桌子在世界坐标中的中心位置
-    shopTableCenter = QPointF(396, 1348);
+    // 商店柜台在世界坐标中的中心位置 (上方货柜附近)
+    shopCabinetCenter = QPointF(396, 1280);
 
     ui->setupUi(this);
 
@@ -36,6 +36,14 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFocusPolicy(Qt::StrongFocus);
     view->setFocusPolicy(Qt::NoFocus);
     this->setAttribute(Qt::WA_InputMethodEnabled, false);
+
+    // 悬浮提示框
+    m_shopPromptLabel = new QLabel("[F] 进入商店", this);
+    m_shopPromptLabel->setStyleSheet("background-color: rgba(0, 0, 0, 150); color: white; font-size: 20px; padding: 10px; border-radius: 5px;");
+    m_shopPromptLabel->setAlignment(Qt::AlignCenter);
+    // 将提示框固定在中心偏下的位置
+    m_shopPromptLabel->setGeometry(325, 450, 150, 40);
+    m_shopPromptLabel->hide();
 
     // ========== 初始化游戏引擎 ==========
     m_engine.Init();
@@ -169,37 +177,26 @@ MainWindow::MainWindow(QWidget *parent)
                 // 镜头跟随玩家居中
                 view->centerOn(player);
 
-                // 检测是否靠近商店青色桌子（NPC 对象位置）
-                if (!shopDialogActive && m_shopWindow == nullptr) {
+                // 检测是否靠近商店货柜
+                if (m_shopWindow == nullptr) {
                     QPointF playerCenter(player->x() + playerSize.width() / 2.0,
                                          player->y() + playerSize.height() / 2.0);
-                    qreal dist = QLineF(playerCenter, shopTableCenter).length();
-                    qDebug() << "playerCenter:" << playerCenter << "shopTableCenter:" << shopTableCenter << "dist:" << dist;
-                    if (dist < 80.0) {
-                        shopDialogActive = true;
-                        m_shopDialog = new ShopDialog(this);
-                        connect(m_shopDialog, &ShopDialog::accepted, this, [this]() {
-                            if (m_shopWindow == nullptr) {
-                                m_shopWindow = new ShopWindow(&m_engine, this);
-                                QString itemsDir = QString(PROJECT_DATA_DIR) + "/items";
-                                m_shopWindow->loadItemsFromDirectory(itemsDir);
-                                m_shopWindow->show();
-                                connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
-                                    m_shopWindow = nullptr;
-                                });
-                            } else {
-                                m_shopWindow->show();
-                                m_shopWindow->raise();
-                            }
-                        });
-                        connect(m_shopDialog, &ShopDialog::rejected, this, [this]() {
-                            // 拒绝，不做任何事
-                        });
-                        connect(m_shopDialog, &QDialog::finished, this, [this]() {
-                            shopDialogActive = false;
-                            m_shopDialog = nullptr;
-                        });
-                        m_shopDialog->show();
+                    qreal dist = QLineF(playerCenter, shopCabinetCenter).length();
+                    if (dist < 96.0) {
+                        if (!m_canEnterShop) {
+                            m_canEnterShop = true;
+                            m_shopPromptLabel->show();
+                        }
+                    } else {
+                        if (m_canEnterShop) {
+                            m_canEnterShop = false;
+                            m_shopPromptLabel->hide();
+                        }
+                    }
+                } else {
+                    // 如果打开了商店窗口，隐藏提示
+                    if (m_shopPromptLabel->isVisible()) {
+                        m_shopPromptLabel->hide();
                     }
                 }
             });
@@ -231,14 +228,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             player->setPos(playerLogicalPos.x() - newW / 2.0, playerLogicalPos.y() - newH);
         }
         break;
-    case Qt::Key_Y:
-        if (shopDialogActive && m_shopDialog) {
-            m_shopDialog->accept();
-        }
-        break;
-    case Qt::Key_N:
-        if (shopDialogActive && m_shopDialog) {
-            m_shopDialog->reject();
+    case Qt::Key_F:
+        if (m_canEnterShop && m_shopWindow == nullptr) {
+            m_shopWindow = new ShopWindow(&m_engine, this);
+            m_shopWindow->loadItemsFromEngine();
+            m_shopWindow->show();
+            connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
+                m_shopWindow = nullptr;
+            });
+            m_shopPromptLabel->hide();
         }
         break;
     default:

@@ -23,6 +23,8 @@ std::string GameEngine::Init() {
     m_state = GameState::MainMenu;
     RNG::Init(); // 程序启动时初始化全局 mt19937 种子
 
+    m_shop.SetEngine(this);
+
     // ── 启动游戏内时钟并注册昼夜回调 ────────────────────
     m_clock.SetOnDayToNight([this]() { _OnDayToNight(); });
     m_clock.SetOnNightToDay([this]() { _OnNightToDay(); });

@@ -3,8 +3,8 @@
 #include "Common.h"
 #include "GameEngine.h"
 
-class ShopDialog;
 class ShopWindow;
+class QLabel;
 
 namespace Ui {
 class MainWindow;
@@ -51,9 +51,9 @@ private:
     GameEngine m_engine;
 
     // 商店交互
-    bool shopDialogActive;
-    QPointF shopTableCenter;
-    ShopDialog *m_shopDialog;
+    bool m_canEnterShop;
+    QPointF shopCabinetCenter;
+    QLabel *m_shopPromptLabel;
     ShopWindow *m_shopWindow;
 };
 

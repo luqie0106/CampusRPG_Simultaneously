@@ -9,9 +9,10 @@ public:
     explicit ShopWindow(GameEngine *engine, QWidget *parent = nullptr);
     ~ShopWindow();
 
-    void loadItemsFromDirectory(const QString &dirPath);
+    void loadItemsFromEngine();
 
 private:
+    QString getImagePath(const QString& itemName);
     void buildUI();
     void refreshShopList();
 

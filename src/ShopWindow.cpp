@@ -51,35 +51,56 @@ ShopWindow::ShopWindow(GameEngine *engine, QWidget *parent)
 
 ShopWindow::~ShopWindow() {}
 
-void ShopWindow::loadItemsFromDirectory(const QString &dirPath) {
+void ShopWindow::loadItemsFromEngine() {
     m_entries.clear();
-    QDir dir(dirPath);
-    if (!dir.exists()) {
-        qWarning() << "物品目录不存在:" << dirPath;
-        return;
-    }
-
-    QStringList filters;
-    filters << "*.png";
-    QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files, QDir::Name);
-
-    for (const QFileInfo &fi : fileList) {
-        // 从文件名生成显示名（去掉扩展名，下划线替换为空格，首字母大写）
-        QString rawName = fi.baseName();
-        QString displayName = rawName.replace('_', ' ');
-        // 简单首字母大写
-        if (!displayName.isEmpty()) {
-            displayName[0] = displayName[0].toUpper();
-        }
-
+    
+    if (!m_engine) return;
+    
+    const auto& shopItems = m_engine->GetShopItemList();
+    for (const auto& shopItem : shopItems) {
+        if (!shopItem.item) continue;
+        
         ShopEntry entry;
-        entry.name = displayName;
-        entry.imagePath = fi.absoluteFilePath();
-        entry.price = 10; // 默认价格，后续可按需调整
+        entry.name = QString::fromStdString(shopItem.item->getName());
+        entry.price = shopItem.item->getValue();
+        entry.imagePath = getImagePath(entry.name);
         m_entries.append(entry);
     }
 
     buildUI();
+}
+
+QString ShopWindow::getImagePath(const QString& itemName) {
+    QString base = QString(PROJECT_DATA_DIR) + "/items/";
+    
+    // Food & Potions
+    if (itemName.contains("猪肉") || itemName.contains("Pork")) return base + "porkchop_cooked.png";
+    if (itemName.contains("牛排") || itemName.contains("Steak")) return base + "beef_cooked.png";
+    if (itemName.contains("金苹果") || itemName.contains("Apple")) return base + "apple_golden.png";
+    if (itemName.contains("药水") || itemName.contains("Potion")) return base + "potion_bottle_drinkable.png";
+    
+    // Iron Equipments
+    if (itemName.contains("铁剑") || itemName.contains("Iron Sword")) return base + "iron_sword.png";
+    if (itemName.contains("铁头盔") || itemName.contains("Iron Helmet")) return base + "iron_helmet.png";
+    if (itemName.contains("铁胸甲") || itemName.contains("Iron Armor")) return base + "iron_chestplate.png";
+    if (itemName.contains("铁护腿") || itemName.contains("Iron Leggings")) return base + "iron_leggings.png";
+    if (itemName.contains("铁靴") || itemName.contains("Iron Boots")) return base + "iron_boots.png";
+    
+    // Gold Equipments
+    if (itemName.contains("金剑") || itemName.contains("Golden Sword")) return base + "gold_sword.png";
+    if (itemName.contains("金头盔") || itemName.contains("Golden Helmet")) return base + "gold_helmet.png";
+    if (itemName.contains("金胸甲") || itemName.contains("Golden Armor")) return base + "gold_chestplate.png";
+    if (itemName.contains("金护腿") || itemName.contains("Golden Leggings")) return base + "gold_leggings.png";
+    if (itemName.contains("金靴") || itemName.contains("Golden Boots")) return base + "gold_boots.png";
+    
+    // Diamond Equipments
+    if (itemName.contains("钻石剑") || itemName.contains("Diamond Sword")) return base + "diamond_sword.png";
+    if (itemName.contains("钻石头盔") || itemName.contains("Diamond Helmet")) return base + "diamond_helmet.png";
+    if (itemName.contains("钻石胸甲") || itemName.contains("Diamond Armor")) return base + "diamond_chestplate.png";
+    if (itemName.contains("钻石护腿") || itemName.contains("Diamond Leggings")) return base + "diamond_leggings.png";
+    if (itemName.contains("钻石靴") || itemName.contains("Diamond Boots")) return base + "diamond_boots.png";
+    
+    return base + "items.png";
 }
 
 void ShopWindow::buildUI() {

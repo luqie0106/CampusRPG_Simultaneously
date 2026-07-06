@@ -3,7 +3,10 @@
 #include "../include/Shop.h"
 #include "../include/Exceptions.h"
 #include "../include/RNG.h"
+#include "../include/GameEngine.h"
+
 Shop::Shop() {
+    lastRefreshDays = -1;
     InitShopItems();
 }
 
@@ -39,14 +42,20 @@ void Shop::InitShopItems() {
     m_allShopItems.push_back({Equipment::DiamondLeggings(),1, 1});
     m_allShopItems.push_back({Equipment::DiamondBoots(), 1, 1});
 
-    lastRefreshTime = std::chrono::system_clock::now() - std::chrono::hours(24);
     RefreshShop();
 }
 
+void Shop::SetEngine(GameEngine* engine) {
+    m_engine = engine;
+}
+
 void Shop::RefreshShop() {
-    auto now = std::chrono::system_clock::now();
-    auto hours = std::chrono::duration_cast<std::chrono::hours>(now - lastRefreshTime).count();
-    if (hours >= 24) {
+    int currentDays = 0;
+    if (m_engine) {
+        currentDays = m_engine->GetGameTime().Day;
+    }
+
+    if (currentDays >= lastRefreshDays + 1) {
         std::vector<ShopItem> pool = m_allShopItems;
         for (int i = (int)pool.size() - 1; i > 0; --i) {
             int j = RNG::RandInt(0, i);
@@ -59,7 +68,7 @@ void Shop::RefreshShop() {
             m_shopItems.push_back(pool[i]);
         }
         
-        lastRefreshTime = now;
+        lastRefreshDays = currentDays;
     }
 }
 

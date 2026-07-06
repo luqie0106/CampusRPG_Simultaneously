@@ -3,6 +3,8 @@
 #include "Character.h"
 #include "Common.h"
 
+class GameEngine;
+
 struct ShopItem {
     std::shared_ptr<Item> item;
     int stock;
@@ -29,8 +31,11 @@ public:
     // 刷新商店库存
     void RefreshShop();
 
+    void SetEngine(GameEngine* engine);
+
 private:
+    GameEngine* m_engine = nullptr;
     std::vector<ShopItem> m_shopItems;
     std::vector<ShopItem> m_allShopItems;
-    std::chrono::system_clock::time_point lastRefreshTime;
+    int lastRefreshDays;
 };
