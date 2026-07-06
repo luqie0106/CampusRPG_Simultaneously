@@ -34,5 +34,6 @@
     </qresource>
     <qresource prefix="/data">
         <file>data/tiles/male_01_hat_walk_32x32_3frames.png</file>
+        <file>data/Characters_free/Alex_idle_16x16.png</file>
     </qresource>
 </RCC>

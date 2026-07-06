@@ -5,24 +5,33 @@
 #include <QBrush>
 #include <QColor>
 #include <QDebug>
+#include <QDialog>
+#include <QDir>
 #include <QFile>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QGridLayout>
+#include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QPixmap>
 #include <QPointF>
+#include <QPushButton>
+#include <QScrollArea>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QString>
 #include <QThread>
 #include <QTimer>
+#include <QVBoxLayout>
 #include <QFileInfo>
 
 // C++ Standard Library Includes

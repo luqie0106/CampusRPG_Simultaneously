@@ -3,6 +3,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QtMapLoader.h"
+#include "ShopDialog.h"
+#include "ShopWindow.h"
 #include <cmath>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,6 +17,13 @@ MainWindow::MainWindow(QWidget *parent)
     keyA = false;
     keyS = false;
     keyD = false;
+    currentCharacter = 0;
+    shopDialogActive = false;
+    m_shopDialog = nullptr;
+    m_shopWindow = nullptr;
+
+    // 商店青色桌子在世界坐标中的中心位置
+    shopTableCenter = QPointF(396, 1348);
 
     ui->setupUi(this);
 
@@ -40,33 +49,52 @@ MainWindow::MainWindow(QWidget *parent)
     mapScene->setSceneRect(mapScene->itemsBoundingRect());
 
     // ========== 玩家贴图切片与初始化 ==========
-    // 精灵图: male_01_hat_walk_32x32_3frames.png
+    // 角色0: male_01_hat_walk_32x32_3frames.png
     // 规格: 每帧 32x32, 每行 3 帧, 共 4 行(4个方向)
     // 实测行序: 0下, 1左, 2右, 3上
-    QPixmap fullSpriteSheet(":/data/data/tiles/male_01_hat_walk_32x32_3frames.png");
-    const int frameW = 32;
-    const int frameH = 32;
+    QPixmap char0Sheet(":/data/data/tiles/male_01_hat_walk_32x32_3frames.png");
+    const int c0W = 32;
+    const int c0H = 32;
 
-    if (!fullSpriteSheet.isNull()) {
+    if (!char0Sheet.isNull()) {
         // 取每行中间帧(第2列, index=1)作为该方向静止贴图
-        playerFrames[0] = fullSpriteSheet.copy(frameW * 1, frameH * 1, frameW, frameH);  // 左
-        playerFrames[1] = fullSpriteSheet.copy(frameW * 1, frameH * 3, frameW, frameH);  // 上
-        playerFrames[2] = fullSpriteSheet.copy(frameW * 1, frameH * 2, frameW, frameH);  // 右
-        playerFrames[3] = fullSpriteSheet.copy(frameW * 1, frameH * 0, frameW, frameH);  // 下
+        playerFrames[0][0] = char0Sheet.copy(c0W * 1, c0H * 1, c0W, c0H);  // 左
+        playerFrames[0][1] = char0Sheet.copy(c0W * 1, c0H * 3, c0W, c0H);  // 上
+        playerFrames[0][2] = char0Sheet.copy(c0W * 1, c0H * 2, c0W, c0H);  // 右
+        playerFrames[0][3] = char0Sheet.copy(c0W * 1, c0H * 0, c0W, c0H);  // 下
     } else {
-        qWarning() << "未能加载玩家精灵图，请检查 qrc 路径与构建！";
+        qWarning() << "未能加载角色0精灵图，请检查 qrc 路径与构建！";
+    }
+
+    // 角色1: Alex_idle_16x16.png
+    // 实际尺寸: 64x32, 单行 4 帧, 每帧 16x32
+    // 帧序: 0右, 1上, 2左, 3下
+    QPixmap char1Sheet(":/data/data/Characters_free/Alex_idle_16x16.png");
+    const int c1W = 16;
+    const int c1H = 32;
+
+    if (!char1Sheet.isNull()) {
+        playerFrames[1][0] = char1Sheet.copy(c1W * 2, 0, c1W, c1H);  // 左
+        playerFrames[1][1] = char1Sheet.copy(c1W * 1, 0, c1W, c1H);  // 上
+        playerFrames[1][2] = char1Sheet.copy(c1W * 0, 0, c1W, c1H);  // 右
+        playerFrames[1][3] = char1Sheet.copy(c1W * 3, 0, c1W, c1H);  // 下
+    } else {
+        qWarning() << "未能加载角色1(Alex)精灵图，请检查 qrc 路径与构建！";
     }
 
     player = new QGraphicsPixmapItem();
-    if (!fullSpriteSheet.isNull()) {
-        player->setPixmap(playerFrames[3]); // 默认朝下
+    if (!playerFrames[0][3].isNull()) {
+        player->setPixmap(playerFrames[0][3]); // 默认角色0朝下
     }
     player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
     
     // 获取真实出生点并换算为像素坐标 (瓦片大小默认 16)
     GamePoint spawnPoint = m_engine.GetWorldMap().GetSpawnPoint();
-    player->setPos(spawnPoint.x * 16.0, spawnPoint.y * 16.0);
+    QPointF spawnPx(spawnPoint.x * 16.0, spawnPoint.y * 16.0);
+    player->setPos(spawnPx);
+    // 记录脚底锚点位置（top-left + 宽度一半, 高度），切换角色时以此为基准重算
+    playerLogicalPos = QPointF(spawnPx.x() + 32.0 / 2.0, spawnPx.y() + 32.0);
 
     // 移动定时器 16ms刷新一次（60帧）
     moveTimer = new QTimer(this);
@@ -75,10 +103,10 @@ MainWindow::MainWindow(QWidget *parent)
                 int dx = 0;
                 int dy = 0;
                 // 计算移动偏移并更新人物朝向
-                if (keyW) { dy -= moveSpeed; if(!playerFrames[1].isNull()) player->setPixmap(playerFrames[1]); }
-                if (keyS) { dy += moveSpeed; if(!playerFrames[3].isNull()) player->setPixmap(playerFrames[3]); }
-                if (keyA) { dx -= moveSpeed; if(!playerFrames[0].isNull()) player->setPixmap(playerFrames[0]); }
-                if (keyD) { dx += moveSpeed; if(!playerFrames[2].isNull()) player->setPixmap(playerFrames[2]); }
+                if (keyW) { dy -= moveSpeed; if(!playerFrames[currentCharacter][1].isNull()) player->setPixmap(playerFrames[currentCharacter][1]); }
+                if (keyS) { dy += moveSpeed; if(!playerFrames[currentCharacter][3].isNull()) player->setPixmap(playerFrames[currentCharacter][3]); }
+                if (keyA) { dx -= moveSpeed; if(!playerFrames[currentCharacter][0].isNull()) player->setPixmap(playerFrames[currentCharacter][0]); }
+                if (keyD) { dx += moveSpeed; if(!playerFrames[currentCharacter][2].isNull()) player->setPixmap(playerFrames[currentCharacter][2]); }
 
                 // ========== 碰撞检测与边界限制 ==========
                 QRectF mapRange = mapScene->sceneRect();
@@ -94,11 +122,14 @@ MainWindow::MainWindow(QWidget *parent)
                 if(nextY + playerSize.height() > mapRange.bottom()) nextY = mapRange.bottom() - playerSize.height();
 
                 // 2. 定义角色碰撞箱 (相对于人物左上角偏移和大小)
-                // 取人物偏下方的区域，避免头碰到墙壁就卡住 (基于32x32)
-                qreal colOffsetX = 6;
-                qreal colOffsetY = 16;
-                qreal colWidth = 20;
-                qreal colHeight = 15;
+                // 取人物偏下方的区域，避免头碰到墙壁就卡住
+                // 按精灵图尺寸缩放，适配不同角色
+                qreal spriteW = playerSize.width();
+                qreal spriteH = playerSize.height();
+                qreal colOffsetX = spriteW * 6.0 / 32.0;
+                qreal colOffsetY = spriteH * 16.0 / 32.0;
+                qreal colWidth = spriteW * 20.0 / 32.0;
+                qreal colHeight = spriteH * 15.0 / 32.0;
 
                 // 辅助函数：检查指定坐标的碰撞箱是否全部覆盖在Walkable格子上
                 auto checkWalkable = [&](qreal tx, qreal ty) {
@@ -132,11 +163,45 @@ MainWindow::MainWindow(QWidget *parent)
 
                 // 赋值限制后的坐标
                 player->setPos(finalX, finalY);
+                // 同步脚底锚点
+                playerLogicalPos = QPointF(finalX + playerSize.width() / 2.0, finalY + playerSize.height());
 
                 // 镜头跟随玩家居中
                 view->centerOn(player);
 
-                // 现已采用无缝大地图，无需传送门检测
+                // 检测是否靠近商店青色桌子（NPC 对象位置）
+                if (!shopDialogActive && m_shopWindow == nullptr) {
+                    QPointF playerCenter(player->x() + playerSize.width() / 2.0,
+                                         player->y() + playerSize.height() / 2.0);
+                    qreal dist = QLineF(playerCenter, shopTableCenter).length();
+                    qDebug() << "playerCenter:" << playerCenter << "shopTableCenter:" << shopTableCenter << "dist:" << dist;
+                    if (dist < 80.0) {
+                        shopDialogActive = true;
+                        m_shopDialog = new ShopDialog(this);
+                        connect(m_shopDialog, &ShopDialog::accepted, this, [this]() {
+                            if (m_shopWindow == nullptr) {
+                                m_shopWindow = new ShopWindow(&m_engine, this);
+                                QString itemsDir = QString(PROJECT_DATA_DIR) + "/items";
+                                m_shopWindow->loadItemsFromDirectory(itemsDir);
+                                m_shopWindow->show();
+                                connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
+                                    m_shopWindow = nullptr;
+                                });
+                            } else {
+                                m_shopWindow->show();
+                                m_shopWindow->raise();
+                            }
+                        });
+                        connect(m_shopDialog, &ShopDialog::rejected, this, [this]() {
+                            // 拒绝，不做任何事
+                        });
+                        connect(m_shopDialog, &QDialog::finished, this, [this]() {
+                            shopDialogActive = false;
+                            m_shopDialog = nullptr;
+                        });
+                        m_shopDialog->show();
+                    }
+                }
             });
     moveTimer->start(16);
 }
@@ -156,6 +221,26 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_A: keyA = true; break;
     case Qt::Key_S: keyS = true; break;
     case Qt::Key_D: keyD = true; break;
+    case Qt::Key_T:
+        currentCharacter = (currentCharacter + 1) % 2;
+        player->setPixmap(playerFrames[currentCharacter][3]); // 切换后默认朝下
+        // 以脚底锚点为基准重算左上角，避免切换时视觉偏移
+        {
+            qreal newW = player->boundingRect().width();
+            qreal newH = player->boundingRect().height();
+            player->setPos(playerLogicalPos.x() - newW / 2.0, playerLogicalPos.y() - newH);
+        }
+        break;
+    case Qt::Key_Y:
+        if (shopDialogActive && m_shopDialog) {
+            m_shopDialog->accept();
+        }
+        break;
+    case Qt::Key_N:
+        if (shopDialogActive && m_shopDialog) {
+            m_shopDialog->reject();
+        }
+        break;
     default:
         QMainWindow::keyPressEvent(event);
         break;

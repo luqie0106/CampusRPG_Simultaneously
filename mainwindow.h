@@ -3,7 +3,8 @@
 #include "Common.h"
 #include "GameEngine.h"
 
-  // 新增：切换地图函数需要QPointF类型
+class ShopDialog;
+class ShopWindow;
 
 namespace Ui {
 class MainWindow;
@@ -30,8 +31,12 @@ private:
 
     // 玩家贴图对象
     QGraphicsPixmapItem *player;
-    // 存储玩家的4个朝向贴图 (0左, 1上, 2右, 3下)
-    QPixmap playerFrames[4];
+    // 存储两个角色的4个朝向贴图 [角色索引][方向] (方向: 0左, 1上, 2右, 3下)
+    QPixmap playerFrames[2][4];
+    // 当前角色索引 (0=男角色, 1=Alex)
+    int currentCharacter;
+    // 玩家逻辑位置（以脚底为锚点，避免切换角色时视觉偏移）
+    QPointF playerLogicalPos;
     // 移动速度（只声明，不赋值）
     int moveSpeed;
     // 按键状态标记（只声明，不赋值）
@@ -44,5 +49,11 @@ private:
 
     // 游戏引擎实例（持有 WorldMap、碰撞数据、玩家状态等）
     GameEngine m_engine;
+
+    // 商店交互
+    bool shopDialogActive;
+    QPointF shopTableCenter;
+    ShopDialog *m_shopDialog;
+    ShopWindow *m_shopWindow;
 };
 

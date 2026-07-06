@@ -1,0 +1,29 @@
+#pragma once
+
+#include "Common.h"
+#include "GameEngine.h"
+
+class ShopWindow : public QWidget {
+    Q_OBJECT
+public:
+    explicit ShopWindow(GameEngine *engine, QWidget *parent = nullptr);
+    ~ShopWindow();
+
+    void loadItemsFromDirectory(const QString &dirPath);
+
+private:
+    void buildUI();
+    void refreshShopList();
+
+    GameEngine *m_engine;
+    QWidget *m_scrollContent;
+    QVBoxLayout *m_scrollLayout;
+    QLabel *m_goldLabel;
+
+    struct ShopEntry {
+        QString name;
+        QString imagePath;
+        int price;
+    };
+    QVector<ShopEntry> m_entries;
+};
