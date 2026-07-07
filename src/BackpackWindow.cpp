@@ -66,11 +66,10 @@ void BackpackWindow::refreshBackpack() {
 
     m_goldLabel->setText(QString("金币: %1").arg(m_engine->GetPlayerGold()));
 
-    // 获取商店物品列表和背包物品
-    const auto& shopItems = m_engine->GetShopItemList();
+    // 获取背包物品
     const auto& backpackItems = m_engine->GetBackpackItems();
 
-    if (shopItems.empty()) {
+    if (backpackItems.empty()) {
         QLabel *empty = new QLabel("背包空空如也", m_scrollContent);
         empty->setStyleSheet("color: white; font-size: 16px;");
         m_scrollLayout->addWidget(empty);
@@ -97,12 +96,10 @@ void BackpackWindow::refreshBackpack() {
     grid->setSpacing(12);
 
     int displayIndex = 0;
-    for (int i = 0; i < shopItems.size(); ++i) {
-        const auto& shopItem = shopItems[i];
-        if (!shopItem.item) continue;
-
-        QString itemName = QString::fromStdString(shopItem.item->getName());
+    for (auto it = firstIndexMap.constBegin(); it != firstIndexMap.constEnd(); ++it) {
+        QString itemName = it.key();
         int count = itemCountMap.value(itemName, 0);
+        int itemIndex = it.value();
 
         int row = displayIndex / cols;
         int col = displayIndex % cols;
@@ -156,7 +153,6 @@ void BackpackWindow::refreshBackpack() {
             "QPushButton:hover { background-color: #66BB6A; }"
             "QPushButton:disabled { background-color: #666; color: #999; }");
 
-        int itemIndex = firstIndexMap.value(itemName, 0);
         connect(useBtn, &QPushButton::clicked, this, [this, itemIndex, itemName]() {
             if (!m_engine || m_engine->GetPlayer() == nullptr) {
                 QMessageBox::warning(this, "错误", "请先创建角色");
