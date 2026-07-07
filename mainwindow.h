@@ -40,9 +40,9 @@ private:
 
     // 玩家贴图对象
     QGraphicsPixmapItem *player;
-    // 存储两个角色的4个朝向贴图 [角色索引][方向] (方向: 0左, 1上, 2右, 3下)
-    QPixmap playerFrames[2][4];
-    // 当前角色索引 (0=男角色, 1=Alex)
+    // 存储三个角色的4个朝向贴图 [角色索引][方向] (方向: 0左, 1上, 2右, 3下)
+    QPixmap playerFrames[3][4];
+    // 当前角色索引 (0=男角色, 1=Alex, 2=Adam)
     int currentCharacter;
     // 玩家逻辑位置（以脚底为锚点，避免切换角色时视觉偏移）
     QPointF playerLogicalPos;

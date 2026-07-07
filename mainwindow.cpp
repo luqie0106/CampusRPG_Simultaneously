@@ -96,6 +96,22 @@ MainWindow::MainWindow(QWidget *parent)
         qWarning() << "未能加载角色1(Alex)精灵图，请检查 qrc 路径与构建！";
     }
 
+    // 角色2: Adam_idle_16x16.png
+    // 实际尺寸: 64x32, 单行 4 帧, 每帧 16x32
+    // 帧序: 0右, 1上, 2左, 3下
+    QPixmap char2Sheet(":/data/data/Characters_free/Adam_idle_16x16.png");
+    const int c2W = 16;
+    const int c2H = 32;
+
+    if (!char2Sheet.isNull()) {
+        playerFrames[2][0] = char2Sheet.copy(c2W * 2, 0, c2W, c2H);  // 左
+        playerFrames[2][1] = char2Sheet.copy(c2W * 1, 0, c2W, c2H);  // 上
+        playerFrames[2][2] = char2Sheet.copy(c2W * 0, 0, c2W, c2H);  // 右
+        playerFrames[2][3] = char2Sheet.copy(c2W * 3, 0, c2W, c2H);  // 下
+    } else {
+        qWarning() << "未能加载角色2(Adam)精灵图，请检查 qrc 路径与构建！";
+    }
+
     player = new QGraphicsPixmapItem();
     if (!playerFrames[0][3].isNull()) {
         player->setPixmap(playerFrames[0][3]); // 默认角色0朝下
@@ -378,7 +394,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_S: keyS = true; break;
     case Qt::Key_D: keyD = true; break;
     case Qt::Key_T:
-        currentCharacter = (currentCharacter + 1) % 2;
+        currentCharacter = (currentCharacter + 1) % 3;
         player->setPixmap(playerFrames[currentCharacter][3]); // 切换后默认朝下
         // 以脚底锚点为基准重算左上角，避免切换时视觉偏移
         {
