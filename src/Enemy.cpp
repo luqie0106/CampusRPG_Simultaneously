@@ -7,7 +7,7 @@
 Enemy::Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
     double maxStaggerPoints, int staggerDuration,
     StatusEffectType debuffType, int debuffChance, int debuffValue, int debuffDuration) :
-name(name), health(health), attack(attack), defense(defense), exp(exp), gold(gold),
+name(name), maxHealth(health), health(health), attack(attack), defense(defense), exp(exp), gold(gold),
 maxStaggerPoints(maxStaggerPoints), currentStaggerPoints(maxStaggerPoints),
 staggerDuration(staggerDuration), isStaggered(false), staggerRoundsLeft(0),
 m_debuffType(debuffType), m_debuffChance(debuffChance),
@@ -38,8 +38,25 @@ std::string Enemy::DisplayStatus() const {
 }
 
 // ── 基础属性 ──────────────────────────────────────────────────────
-int  Enemy::GetHealth()  const { return health; }
-std::string Enemy::GetName() const { return name; }
+int Enemy::GetMaxHealth() const {
+    return maxHealth;
+}
+
+int Enemy::GetHealth() const {
+    return health;
+}
+
+std::string Enemy::GetName() const {
+    return name;
+}
+
+double Enemy::GetMaxStaggerPoints() const {
+    return maxStaggerPoints;
+}
+
+double Enemy::GetCurrentStaggerPoints() const {
+    return currentStaggerPoints;
+}
 int  Enemy::GetAttack()  const { return attack; }
 int  Enemy::GetDefense() const { return defense; }
 int  Enemy::GetExp()     const { return exp; }

@@ -85,6 +85,7 @@ class Equipment : public Item {
         int attack_bonus;  //攻击加成
         int dodge_bonus;   //闪避率加成（整数百分比）
         double stagger_bonus; //破韧加成（叠加到玩家的破韧值上）
+        int maxDurability;
         int durability;    //持久度
         EquipSlot slot;    //装备部位
     public:
@@ -97,6 +98,7 @@ class Equipment : public Item {
         int    GetAttackBonus()   const;
         int    GetDodgeBonus()    const;  // 闪避率加成（整数百分比）
         double GetStaggerBonus()  const;  // 破韧加成
+        int    GetMaxDurability() const;
         int    GetDurability()    const;
         EquipSlot GetSlot()       const;
         void ReduceDurability(int amount);

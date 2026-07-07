@@ -48,8 +48,10 @@ static QJsonValue getProperty(const QJsonArray& properties, const QString& name)
 // ─────────────────────────────────────────────────────────────────────────────
 static void parseObjectGroup(const QJsonObject& layerObj,
                              WorldMap* worldMap,
+                             QGraphicsScene* scene,
                              int tileWidth, int tileHeight,
-                             int tileOffsetX, int tileOffsetY)
+                             int tileOffsetX, int tileOffsetY,
+                             int pixelOffsetX, int pixelOffsetY)
 {
     if (!worldMap) return;
 
@@ -97,40 +99,47 @@ static void parseObjectGroup(const QJsonObject& layerObj,
             bool isBoss = getProperty(props, "isBoss").toBool(false);
             int  sprId  = getProperty(props, "spriteId").toInt(0);
 
-            // 根据 spriteId 选对应的 Enemy 工厂
-            // spriteId 100 = Boss, 101-109 = 普通怪物（按 id 映射不同类型）
             Enemy tpl = Enemy::Bully(); // 默认：校园混混
             std::string displayName = objName.isEmpty() ? "神秘怪物" : objName.toStdString();
 
             if (isBoss) {
-                // Boss 使用 DormGuard 作为默认模板
-                // 如需按 Tiled 中的自定义 hp/atk 覆盖，需要 Enemy 提供 setter，暂时记录日志
-                int customHp  = getProperty(props, "hp").toInt(0);
-                int customAtk = getProperty(props, "atk").toInt(0);
-                tpl = Enemy::DormGuard();
-                if (customHp > 0 || customAtk > 0) {
-                    qDebug() << "  [Boss] Tiled 自定义 hp=" << customHp << " atk=" << customAtk
-                             << "（Enemy 暂无 setter，使用 DormGuard 默认值）";
-                }
-                displayName = objName.isEmpty() ? "Boss" : objName.toStdString();
-            } else {
-                // 普通怪物按 spriteId 映射（对应 Enemy 工厂方法）
                 switch (sprId) {
-                    case 101: tpl = Enemy::Bully();       displayName = "校园混混";   break;
-                    case 102: tpl = Enemy::Skipper();     displayName = "逃课大神";   break;
-                    case 103: tpl = Enemy::Cheater();     displayName = "考试黄牛";   break;
-                    case 104: tpl = Enemy::GangMember();  displayName = "小弟弟";     break;
-                    case 105: tpl = Enemy::Bully();       displayName = "小流氓";     break;
-                    case 106: tpl = Enemy::Skipper();     displayName = "混混头目";   break;
-                    case 107: tpl = Enemy::MidnightNerd(); displayName = "竞赛狂人";  break;
-                    default:  tpl = Enemy::Bully();       break;
+                    case 201: tpl = Enemy::DeanOfStudents(); break;
+                    case 202: tpl = Enemy::PECommittee();    break;
+                    case 203: tpl = Enemy::Principal();      break;
+                    case 204: tpl = Enemy::DormGuard();      break;
+                    default:  tpl = Enemy::DormGuard();      break;
                 }
-                if (!objName.isEmpty()) displayName = objName.toStdString();
+            } else {
+                // 普通怪物按 spriteId 映射
+                switch (sprId) {
+                    case 101: tpl = Enemy::Bully();          break;
+                    case 102: tpl = Enemy::Skipper();        break;
+                    case 103: tpl = Enemy::Cheater();        break;
+                    case 104: tpl = Enemy::GangMember();     break;
+                    case 107: tpl = Enemy::MidnightNerd();   break;
+                    default:  tpl = Enemy::Bully();          break;
+                }
             }
+            
+            displayName = tpl.GetName();
 
             InteractableInfo info = InteractableInfo::MakeEnemy(objId, pos, displayName, tpl);
             if (isBoss) info.type = InteractableType::Boss;
             worldMap->AddInteractable(std::move(info));
+
+            // 在地图上绘制一个临时方块作为怪物占位符
+            if (scene) {
+                QGraphicsRectItem* rect = new QGraphicsRectItem(px + pixelOffsetX, py + pixelOffsetY, tileWidth, tileHeight);
+                if (isBoss) {
+                    rect->setBrush(QBrush(QColor(128, 0, 128, 200))); // Boss是紫色
+                } else {
+                    rect->setBrush(QBrush(QColor(255, 0, 0, 200))); // 小怪是红色
+                }
+                rect->setPen(QPen(Qt::NoPen));
+                rect->setZValue(5); // 层级比地图高，比玩家低
+                scene->addItem(rect);
+            }
 
             qDebug() << "  [Monster] id=" << objId << "isBoss=" << isBoss
                      << "spriteId=" << sprId << "tile=(" << tileX << "," << tileY << ")";
@@ -304,8 +313,8 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
 
         // ── objectgroup 层：解析实体，注册到 WorldMap ──────────────────────
         if (layerType == QStringLiteral("objectgroup")) {
-            parseObjectGroup(layerObj, worldMap, tileWidth, tileHeight,
-                             tileOffsetX, tileOffsetY);
+            parseObjectGroup(layerObj, worldMap, scene, tileWidth, tileHeight,
+                             tileOffsetX, tileOffsetY, pixelOffsetX, pixelOffsetY);
             continue;
         }
 

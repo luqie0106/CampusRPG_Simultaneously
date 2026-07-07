@@ -11,6 +11,9 @@ public:
 
     void refreshBackpack();
 
+signals:
+    void battleItemUsed(const QString& resultLog);
+
 private:
     QString getImagePath(const QString& itemName);
     void buildUI();

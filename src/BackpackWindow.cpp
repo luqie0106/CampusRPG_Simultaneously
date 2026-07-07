@@ -164,8 +164,14 @@ void BackpackWindow::refreshBackpack() {
             }
 
             if (itemIndex > 0) {
-                std::string result = m_engine->UseBackpackItem(itemIndex);
-                QMessageBox::information(this, "使用物品", QString::fromStdString(result));
+                std::string result;
+                if (m_engine->GetState() == GameState::Battle) {
+                    result = m_engine->BattleUseItemBeforeAction(itemIndex);
+                    emit battleItemUsed(QString::fromStdString(result));
+                } else {
+                    result = m_engine->UseBackpackItem(itemIndex);
+                    QMessageBox::information(this, "使用物品", QString::fromStdString(result));
+                }
                 refreshBackpack();
             }
         });

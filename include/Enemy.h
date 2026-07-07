@@ -10,6 +10,7 @@ class Item;
 class Enemy {
     private:
         std::string name;
+        int maxHealth;
         int health;
         int attack;
         int defense;
@@ -40,8 +41,11 @@ class Enemy {
 
         std::string DisplayStatus() const;
 
+        int  GetMaxHealth() const;
         int  GetHealth() const;
         std::string GetName() const;  // 故人名称（供 Qt 直接显示品属标签）
+        double GetMaxStaggerPoints() const;
+        double GetCurrentStaggerPoints() const;
         bool IsStaggered() const; // 是否处于瘫瘪状态
         bool TickStagger(); // 瘫瘪状态回合推进
         void TakeDamage(int damage); // 受到伤害

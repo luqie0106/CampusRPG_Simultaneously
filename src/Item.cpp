@@ -69,13 +69,14 @@ Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_
                      int durability, EquipSlot slot, int dodge_bonus, double stagger_bonus)
     : Item(name, value), defense_bonus(defense_bonus), attack_bonus(attack_bonus),
       dodge_bonus(dodge_bonus), stagger_bonus(stagger_bonus),
-      durability(durability), slot(slot) {}
+      maxDurability(durability), durability(durability), slot(slot) {}
 
 int    Equipment::GetDefenseBonus()  const { return defense_bonus; }
 int    Equipment::GetAttackBonus()   const { return attack_bonus; }
 int    Equipment::GetDodgeBonus()    const { return dodge_bonus; }
 double Equipment::GetStaggerBonus()  const { return stagger_bonus; }
 int    Equipment::GetDurability()    const { return durability; }
+int    Equipment::GetMaxDurability() const { return maxDurability; }
 EquipSlot Equipment::GetSlot()       const { return slot; }
 
 void Equipment::ReduceDurability(int amount) {

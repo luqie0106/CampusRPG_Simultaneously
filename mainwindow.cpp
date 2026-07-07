@@ -6,6 +6,15 @@
 #include "ShopWindow.h"
 #include "BackpackWindow.h"
 #include "CharacterSelectDialog.h"
+#include <QLabel>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
+#include <QKeyEvent>
+#include <QDebug>
+#include <QTimer>
+#include <QVBoxLayout>
+#include <QProgressBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -54,13 +63,57 @@ MainWindow::MainWindow(QWidget *parent)
     interactionLayout->setSpacing(5);
     interactionWidget->hide();
 
+    // ========== 战斗 UI ==========
+    playerHealthBar = new QProgressBar(this);
+    playerHealthBar->setFixedSize(300, 20);
+    playerHealthBar->setTextVisible(false);
+    playerHealthBar->setStyleSheet(
+        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; }"
+        "QProgressBar::chunk { background-color: #4CAF50; border-radius: 5px; }"
+    );
+    playerHealthBar->show();
+
+    enemyHealthBar = new QProgressBar(this);
+    enemyHealthBar->setFixedSize(300, 20);
+    enemyHealthBar->setTextVisible(false);
+    enemyHealthBar->setStyleSheet(
+        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; }"
+        "QProgressBar::chunk { background-color: #f44336; border-radius: 5px; }"
+    );
+    enemyHealthBar->hide();
+
+    enemyStaggerBar = new QProgressBar(this);
+    enemyStaggerBar->setFixedSize(300, 10);
+    enemyStaggerBar->setTextVisible(false);
+    enemyStaggerBar->setStyleSheet(
+        "QProgressBar { border: 1px solid black; border-radius: 3px; background-color: #555555; }"
+        "QProgressBar::chunk { background-color: #FFEB3B; border-radius: 3px; }"
+    );
+    enemyStaggerBar->hide();
+
+    equipmentWidget = new QWidget(this);
+    equipmentLayout = new QVBoxLayout(equipmentWidget);
+    equipmentLayout->setContentsMargins(10, 10, 10, 10);
+    equipmentLayout->setSpacing(5);
+    for (int i = 0; i < 5; ++i) {
+        equipLabels[i] = new QLabel(this);
+        equipLabels[i]->setStyleSheet("color: white; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 4px; font-weight: bold; font-size: 14px;");
+        equipLabels[i]->hide();
+        equipmentLayout->addWidget(equipLabels[i]);
+    }
+    equipmentWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    equipmentWidget->show();
+
+    battleActions = {"[攻击]", "[使用物品]", "[逃跑]"};
+
     // ========== 初始化游戏引擎 ==========
     m_engine.Init();
 
     // 读档逻辑
     m_engine.LoadGame();
+    bool hasSavedGame = (m_engine.GetState() == GameState::InGame);
 
-    if (m_engine.GetState() != GameState::InGame) {
+    if (!hasSavedGame) {
         // ========== 角色选择对话框 ==========
         m_charSelectDialog = new CharacterSelectDialog(&m_engine, this);
         m_charSelectDialog->exec();
@@ -144,10 +197,11 @@ MainWindow::MainWindow(QWidget *parent)
     player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
     GamePoint pos;
-    if (m_engine.GetState() == GameState::InGame) {
+    if (hasSavedGame) {
         pos = m_engine.GetWorldMap().GetPlayerPos();
     } else {
         pos = m_engine.GetWorldMap().GetSpawnPoint();
+        m_engine.GetWorldMap().SetPlayerPos(pos); // 同步引擎位置
     }
     
     // 获取真实坐标并换算为像素坐标 (瓦片大小默认 16)
@@ -168,7 +222,9 @@ MainWindow::MainWindow(QWidget *parent)
                 }
 
                 // 计算移动偏移并更新人物朝向
-                if (!autoPath.empty() && currentPathIndex < autoPath.size()) {
+                if (m_engine.GetState() == GameState::Battle) {
+                    autoPath.clear();
+                } else if (!autoPath.empty() && currentPathIndex < autoPath.size()) {
                     // 自动寻路移动
                     GamePoint targetPoint = autoPath[currentPathIndex];
                     // 目标像素为瓦片中心
@@ -272,6 +328,16 @@ MainWindow::MainWindow(QWidget *parent)
                 // 镜头跟随玩家居中
                 view->centerOn(player);
 
+                // 战斗 UI 跟随
+                if (m_engine.GetState() == GameState::Battle) {
+                    enemyHealthBar->move(view->width() / 2 - enemyHealthBar->width() / 2, 10);
+                    enemyStaggerBar->move(view->width() / 2 - enemyStaggerBar->width() / 2, 35);
+                }
+                
+                // 常驻 UI 跟随
+                playerHealthBar->move(view->width() / 2 - playerHealthBar->width() / 2, view->height() - 30);
+                equipmentWidget->move(10, view->height() - equipmentWidget->sizeHint().height() - 40);
+
                 // 更新统一交互 UI
                 if (m_shopWindow == nullptr) {
                     updateInteractionUI();
@@ -299,6 +365,29 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::updateInteractionUI() {
     if (!player) return;
+    
+    if (m_engine.GetState() == GameState::Battle) {
+        // 战斗状态：渲染快捷键提示
+        QLayoutItem *child;
+        while ((child = interactionLayout->takeAt(0)) != nullptr) {
+            delete child->widget();
+            delete child;
+        }
+        QLabel *label = new QLabel("F【攻击】  B【打开背包】  P【逃跑】", this);
+        label->setFont(QFont("Arial", 16, QFont::Bold));
+        label->setStyleSheet("color: yellow; background-color: transparent;");
+        interactionLayout->addWidget(label);
+        interactionWidget->adjustSize();
+        
+        int targetX = view->width() * 0.75 - interactionWidget->width() / 2.0;
+        int targetY = view->height() * 0.75 - interactionWidget->height() / 2.0;
+        interactionWidget->move(targetX, targetY);
+        if (!interactionWidget->isVisible()) {
+            interactionWidget->show();
+            interactionWidget->raise();
+        }
+        return; // 战斗中不检测附近物品
+    }
     
     QPointF playerCenter(player->x() + player->boundingRect().width() / 2.0,
                          player->y() + player->boundingRect().height() / 2.0);
@@ -407,6 +496,29 @@ void MainWindow::updateInteractionUI() {
 // 按键按下触发
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+    if (m_engine.GetState() == GameState::Battle) {
+        if (event->key() == Qt::Key_F) {
+            m_engine.BattlePlayerAttack();
+            updateBattleUI();
+            updateEquipmentUI();
+        } else if (event->key() == Qt::Key_B) {
+            if (m_backpackWindow == nullptr) {
+                m_backpackWindow = new BackpackWindow(&m_engine, nullptr);
+                connect(m_backpackWindow, &BackpackWindow::battleItemUsed, this, &MainWindow::onBattleItemUsed);
+                connect(m_backpackWindow, &QObject::destroyed, this, [this]() { m_backpackWindow = nullptr; updateEquipmentUI(); });
+                m_backpackWindow->show();
+            } else {
+                m_backpackWindow->raise();
+                m_backpackWindow->activateWindow();
+            }
+        } else if (event->key() == Qt::Key_P) {
+            m_engine.BattleFlee();
+            updateBattleUI();
+            updateEquipmentUI();
+        }
+        return; // 战斗期间拦截其他按键
+    }
+
     switch (event->key())
     {
     case Qt::Key_W: keyW = true; break;
@@ -442,12 +554,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
                 if (m_shopWindow == nullptr) {
                     m_shopWindow = new ShopWindow(&m_engine, this);
-                    // 状态机会在 ExecuteInteraction 内部切换
                     m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                     m_shopWindow->loadItemsFromEngine();
                     m_shopWindow->show();
                     connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
                         m_shopWindow = nullptr;
+                        updateEquipmentUI();
                     });
                     if (interactionWidget->isVisible()) {
                         interactionWidget->hide();
@@ -456,7 +568,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             } else {
                 std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                 qDebug() << "Interaction result:" << QString::fromStdString(result);
-                // 强制刷新：由于物品可能被拾取/被移除，清空当前列表并立刻重新检测
+                if (info.defaultInteraction == InteractionType::StartBattle) {
+                    updateBattleUI();
+                }
                 currentInteractables.clear();
                 updateInteractionUI();
             }
@@ -475,9 +589,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_B:
         if (m_backpackWindow == nullptr) {
             m_backpackWindow = new BackpackWindow(&m_engine, nullptr);
-            connect(m_backpackWindow, &QObject::destroyed, this, [this]() {
-                m_backpackWindow = nullptr;
-            });
+            connect(m_backpackWindow, &QObject::destroyed, this, [this]() { m_backpackWindow = nullptr; updateEquipmentUI(); });
             m_backpackWindow->show();
         } else {
             m_backpackWindow->raise();
@@ -612,4 +724,83 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         }
     }
     return QMainWindow::eventFilter(obj, event);
+}
+
+void MainWindow::updateBattleUI() {
+    const Enemy* enemy = m_engine.GetCurrentEnemy();
+    if (enemy) {
+        enemyHealthBar->setMaximum(enemy->GetMaxHealth());
+        enemyHealthBar->setValue(enemy->GetHealth());
+        enemyHealthBar->show();
+
+        if (enemy->IsBoss()) {
+            enemyStaggerBar->setMaximum(static_cast<int>(enemy->GetMaxStaggerPoints()));
+            enemyStaggerBar->setValue(static_cast<int>(enemy->GetCurrentStaggerPoints()));
+            enemyStaggerBar->show();
+        } else {
+            enemyStaggerBar->hide();
+        }
+    }
+
+    if (m_engine.GetState() != GameState::Battle) {
+        // 战斗结束，延迟隐藏怪物状态并恢复菜单
+        enemyHealthBar->hide();
+        enemyStaggerBar->hide();
+        
+        // 检查并同步复活/传送导致的位置突变
+        GamePoint enginePos = m_engine.GetWorldMap().GetPlayerPos();
+        QPointF expectedPx(enginePos.x * 16.0, enginePos.y * 16.0);
+        QPointF currentPx = player->pos();
+        
+        if (std::abs(expectedPx.x() - currentPx.x()) > 16.0 || 
+            std::abs(expectedPx.y() - currentPx.y()) > 16.0) {
+            player->setPos(expectedPx);
+            playerLogicalPos = QPointF(expectedPx.x() + player->boundingRect().width() / 2.0, 
+                                       expectedPx.y() + player->boundingRect().height());
+            view->centerOn(player);
+            autoPath.clear();
+        }
+        
+        currentInteractables.clear();
+        interactionWidget->hide();
+        updateInteractionUI();
+    }
+}
+
+void MainWindow::updateEquipmentUI() {
+    if (!m_engine.GetPlayer()) return;
+    auto playerChar = m_engine.GetPlayer();
+    
+    // Update player health bar
+    playerHealthBar->setMaximum(playerChar->GetMaxHealth());
+    playerHealthBar->setValue(playerChar->GetHealth());
+    
+    EquipSlot eqSlots[] = { EquipSlot::Weapon, EquipSlot::Head, EquipSlot::Body, EquipSlot::Legs, EquipSlot::Feet };
+    QString slotNames[] = { "武器", "头盔", "胸甲", "裤腿", "靴子" };
+    int labelIdx = 0;
+    
+    for (int i = 0; i < 5; ++i) {
+        auto eq = playerChar->GetEquipmentAt(eqSlots[i]);
+        if (eq) {
+            auto equipment = std::dynamic_pointer_cast<Equipment>(eq);
+            if (equipment) {
+                equipLabels[labelIdx]->setText(QString("%1 耐久: %2/%3")
+                                               .arg(slotNames[i])
+                                               .arg(equipment->GetDurability())
+                                               .arg(equipment->GetMaxDurability()));
+                equipLabels[labelIdx]->show();
+                labelIdx++;
+            }
+        }
+    }
+    
+    for (int i = labelIdx; i < 5; ++i) {
+        equipLabels[i]->hide();
+    }
+    equipmentWidget->adjustSize();
+}
+
+void MainWindow::onBattleItemUsed(const QString& resultLog) {
+    updateBattleUI();
+    updateEquipmentUI();
 }

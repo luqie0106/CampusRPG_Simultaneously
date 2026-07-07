@@ -9,6 +9,8 @@ class CharacterSelectDialog;
 class QLabel;
 class QGraphicsView;
 class QGraphicsScene;
+class QProgressBar;
+class QVBoxLayout;
 
 namespace Ui {
 class MainWindow;
@@ -79,5 +81,22 @@ private:
 
     // 角色选择
     CharacterSelectDialog *m_charSelectDialog;
+
+    // ========== 战斗 UI ==========
+    QProgressBar *playerHealthBar;
+    QProgressBar *enemyHealthBar;
+    QProgressBar *enemyStaggerBar;
+    std::vector<QString> battleActions;
+    void updateBattleUI();
+
+    // ========== 装备耐久度 UI ==========
+    QWidget *equipmentWidget;
+    QVBoxLayout *equipmentLayout;
+    QLabel *equipLabels[5];
+    void updateEquipmentUI();
+
+public slots:
+    // 用于接收 BackpackWindow 传来的信号
+    void onBattleItemUsed(const QString& resultLog);
 };
 
