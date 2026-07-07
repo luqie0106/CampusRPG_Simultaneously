@@ -13,6 +13,7 @@ enum class InteractableType {
     BlackMarket, // 黑市商人（夜晚随机生成）
     NPC,         // 任务 NPC（对话/接取任务，任务系统预留）
     Door,        // 门/传送点（走上自动触发切场退，当前预留）
+    GroundItem,  // 地面掉落物
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ enum class InteractionType {
     EnterBlackMarket, // 进入黑市（夜晚专属）
     TalkToNPC,        // 与 NPC 对话（任务系统 TODO，暂留桩）
     TeleportMap,      // 传送到目标地图（当前地图全系拼接大图，预留供未来扩展）
+    PickUpItem,       // 拾取物品
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,6 +55,9 @@ struct InteractableInfo {
     int         targetX = 0;             // 传送目标坐标 X（世界格子）
     int         targetY = 0;             // 传送目标坐标 Y（世界格子）
 
+    // 仅 type == GroundItem 时有效
+    std::shared_ptr<Item> itemData;
+
     // ── 便捷工厂方法 ─────────────────────────────────────────────────
     // 怪物/Boss 点位：传入 Enemy 工厂生成的实例作为模板
     static InteractableInfo MakeEnemy(int id, GamePoint pos,
@@ -77,6 +82,11 @@ struct InteractableInfo {
                                      const std::string& displayName,
                                      const std::string& targetMap,
                                      int targetX, int targetY);
+
+    // 地面掉落物
+    static InteractableInfo MakeGroundItem(int id, GamePoint pos,
+                                           const std::string& displayName,
+                                           std::shared_ptr<Item> item);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

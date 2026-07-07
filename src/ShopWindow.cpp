@@ -6,6 +6,7 @@ ShopWindow::ShopWindow(GameEngine *engine, QWidget *parent)
     setWindowTitle("校园商店");
     setMinimumSize(700, 500);
     setStyleSheet("background-color: #2c2c2c;");
+    setAttribute(Qt::WA_DeleteOnClose);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 

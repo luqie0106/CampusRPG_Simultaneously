@@ -70,6 +70,19 @@ InteractableInfo InteractableInfo::MakeDoor(int id, GamePoint pos,
     return info;
 }
 
+InteractableInfo InteractableInfo::MakeGroundItem(int id, GamePoint pos,
+                                                  const std::string& displayName,
+                                                  std::shared_ptr<Item> item) {
+    InteractableInfo info;
+    info.id                 = id;
+    info.type               = InteractableType::GroundItem;
+    info.defaultInteraction = InteractionType::PickUpItem;
+    info.pos                = pos;
+    info.displayName        = displayName;
+    info.itemData           = std::move(item);
+    return info;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // WorldMap 构造与出生点管理
 // ─────────────────────────────────────────────────────────────────────────────

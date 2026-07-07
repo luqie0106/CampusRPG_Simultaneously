@@ -5,6 +5,7 @@
 #include "RNG.h"
 
 class Character;
+class Item;
 
 class Enemy {
     private:
@@ -14,6 +15,8 @@ class Enemy {
         int defense;
         int exp;
         int gold;
+        std::shared_ptr<Item> dropItem;
+
         double maxStaggerPoints;     // 最大韧性值（0 表示小怪，无韧度机制）
         double currentStaggerPoints;
         int staggerDuration;      // 瘫瘪持续回合数（小怪无意义）
@@ -49,6 +52,8 @@ class Enemy {
         int  GetExp() const; // 获取经验值
         int  GetGold() const; // 获取金币
         bool IsBoss() const;  // maxStaggerPoints > 0 即为 Boss
+        std::shared_ptr<Item> GetDropItem() const; // 获取掉落物
+        void SetDropItem(std::shared_ptr<Item> item); // 设置掉落物
 
         // ========== 小怪工厂 ==========
         static Enemy Bully();           // 校园混混

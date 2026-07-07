@@ -25,7 +25,7 @@ public:
 
     virtual std::stringstream Show() const;
     bool operator==(const Item& other) const;
-    
+    virtual std::unique_ptr<Item> Clone() const;
 };
 
 class Food : public Item {
@@ -50,6 +50,7 @@ class Food : public Item {
         StatusEffectType GetEffectType()  const;  // 附加状态效果类型（None = 无）
         int              GetEffectValue() const;  // 附加状态效果每回合量值
         std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
 
         // 食物工厂
         static std::shared_ptr<Food> GoldenApple();           // 金苹果：HpRegen 2 回合
@@ -70,6 +71,7 @@ class Medicine : public Item {
         ~Medicine() = default;
         int GetHpRecovery() const;
         std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
 
         // Minecraft 药品工厂
         static std::shared_ptr<Medicine> HealingPotion();
@@ -99,6 +101,7 @@ class Equipment : public Item {
         EquipSlot GetSlot()       const;
         void ReduceDurability(int amount);
         std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
 
         // Minecraft 装备工厂
         // 在普通的面向对象编程里，如果您想调用一个类的函数，必须先造出一个类的对象（实例）。
@@ -124,4 +127,18 @@ class Equipment : public Item {
         // ── 黑市专属装备工厂 ──────────────────────────────────────
         // 夜行衣：极高闪避率 +40%，DEF+5，耐久 800，身体槽
         static std::shared_ptr<Equipment> NightWalkerCloak();
+};
+
+class AchievementItem : public Item {
+    public:
+        AchievementItem(std::string name, int value);
+        ~AchievementItem() = default;
+        std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
+
+        // ── Boss 成就掉落物工厂 ──────────────────────────────────────
+        static std::shared_ptr<AchievementItem> ConfiscatedPhone(); // 被没收的手机 (教导主任)
+        static std::shared_ptr<AchievementItem> Whistle();          // 破旧的哨子 (体育委员长)
+        static std::shared_ptr<AchievementItem> Diploma();          // 绝版毕业证 (校长)
+        static std::shared_ptr<AchievementItem> MasterKey();        // 宿舍万能钥匙 (宿管阿姨)
 };

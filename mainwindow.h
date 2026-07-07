@@ -29,6 +29,9 @@ protected:
     // 事件过滤器，用于处理鼠标点击事件
     bool eventFilter(QObject *obj, QEvent *event) override;
 
+    // 窗口关闭事件，用于自动存档
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *mapScene;
@@ -60,10 +63,13 @@ private:
     // 游戏引擎实例（持有 WorldMap、碰撞数据、玩家状态等）
     GameEngine m_engine;
 
-    // 商店交互
-    bool m_canEnterShop;
-    QPointF shopCabinetCenter;
-    QLabel *m_shopPromptLabel;
+    // 统一交互系统
+    QWidget *interactionWidget;
+    QVBoxLayout *interactionLayout;
+    std::vector<InteractableInfo> currentInteractables;
+    int selectedInteractionIndex;
+    void updateInteractionUI();
+    
     ShopWindow *m_shopWindow;
 };
 

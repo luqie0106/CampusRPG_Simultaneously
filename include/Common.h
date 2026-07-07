@@ -58,3 +58,6 @@
 // Auto-extracted Standard Libraries
 #include <QMenu>
 #include <QMouseEvent>
+
+// Auto-extracted Standard Libraries
+#include <QCloseEvent>

@@ -224,6 +224,9 @@ public:
     //       InteractableInfo::MakeEnemy(1, {10,15}, "校园混混", Enemy::Bully()));
     void AddMapInteractable(InteractableInfo info);
 
+    // ── 【内部实体 ID 分配】──────────
+    int GenerateItemId();
+
     // ── 【WorldMap 直接访问】供 QtMapLoader 在地图加载时使用 ──────────
     // QtMapLoader 通过此接口拿到 WorldMap 引用，用于：
     //   1. 调用 InitMapSize() 初始化世界格栅
@@ -246,6 +249,9 @@ private:
     bool                        m_blackMarketSpawned = false;
     // 下一个全局唯一 ID（黑市商人 + 夜晚怪物）
     int                         m_nextNightEntityId  = 50000;
+
+    // 下一个掉落物 ID
+    int                         m_nextItemEntityId   = 60000;
 
     // ── 战斗状态 ───────────────────────────────────
     std::optional<Enemy>        m_currentEnemy;

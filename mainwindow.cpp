@@ -16,13 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
     keyS = false;
     keyD = false;
     currentCharacter = 0;
-    m_canEnterShop = false;
-    m_shopPromptLabel = nullptr;
     m_shopWindow = nullptr;
     currentPathIndex = 0;
-
-    // 商店柜台在世界坐标中的中心位置 (上方货柜附近)
-    shopCabinetCenter = QPointF(396, 1280);
+    selectedInteractionIndex = 0;
 
     ui->setupUi(this);
 
@@ -47,13 +43,13 @@ MainWindow::MainWindow(QWidget *parent)
     bigMapView->viewport()->installEventFilter(this);
     bigMapView->hide();
 
-    // 悬浮提示框
-    m_shopPromptLabel = new QLabel("[F] 进入商店", this);
-    m_shopPromptLabel->setStyleSheet("background-color: rgba(0, 0, 0, 150); color: white; font-size: 20px; padding: 10px; border-radius: 5px;");
-    m_shopPromptLabel->setAlignment(Qt::AlignCenter);
-    // 将提示框固定在中心偏下的位置
-    m_shopPromptLabel->setGeometry(325, 450, 150, 40);
-    m_shopPromptLabel->hide();
+    // 统一交互系统 UI
+    interactionWidget = new QWidget(this);
+    interactionWidget->setStyleSheet("background-color: rgba(0, 0, 0, 150); border-radius: 8px;");
+    interactionLayout = new QVBoxLayout(interactionWidget);
+    interactionLayout->setContentsMargins(10, 10, 10, 10);
+    interactionLayout->setSpacing(5);
+    interactionWidget->hide();
 
     // ========== 初始化游戏引擎 ==========
     m_engine.Init();
@@ -107,9 +103,19 @@ MainWindow::MainWindow(QWidget *parent)
     player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
     
-    // 获取真实出生点并换算为像素坐标 (瓦片大小默认 16)
-    GamePoint spawnPoint = m_engine.GetWorldMap().GetSpawnPoint();
-    QPointF spawnPx(spawnPoint.x * 16.0, spawnPoint.y * 16.0);
+    // 读档逻辑
+    m_engine.LoadGame();
+    GamePoint pos;
+    if (m_engine.GetState() == GameState::InGame) {
+        pos = m_engine.GetWorldMap().GetPlayerPos();
+    } else {
+        // 显式创建默认角色，防止后续因 m_player 为空而在访问时报错
+        m_engine.CreatePlayer("Steve", 3);
+        pos = m_engine.GetWorldMap().GetSpawnPoint();
+    }
+    
+    // 获取真实坐标并换算为像素坐标 (瓦片大小默认 16)
+    QPointF spawnPx(pos.x * 16.0, pos.y * 16.0);
     player->setPos(spawnPx);
     // 记录脚底锚点位置（top-left + 宽度一半, 高度），切换角色时以此为基准重算
     playerLogicalPos = QPointF(spawnPx.x() + 32.0 / 2.0, spawnPx.y() + 32.0);
@@ -224,30 +230,18 @@ MainWindow::MainWindow(QWidget *parent)
                 player->setPos(finalX, finalY);
                 // 同步脚底锚点
                 playerLogicalPos = QPointF(finalX + playerSize.width() / 2.0, finalY + playerSize.height());
+                // 同步后端引擎玩家坐标（以瓦片格子为单位）
+                m_engine.GetWorldMap().SetPlayerPos(GamePoint(playerLogicalPos.x() / 16.0, playerLogicalPos.y() / 16.0));
 
                 // 镜头跟随玩家居中
                 view->centerOn(player);
 
-                // 检测是否靠近商店货柜
+                // 更新统一交互 UI
                 if (m_shopWindow == nullptr) {
-                    QPointF playerCenter(player->x() + playerSize.width() / 2.0,
-                                         player->y() + playerSize.height() / 2.0);
-                    qreal dist = QLineF(playerCenter, shopCabinetCenter).length();
-                    if (dist < 96.0) {
-                        if (!m_canEnterShop) {
-                            m_canEnterShop = true;
-                            m_shopPromptLabel->show();
-                        }
-                    } else {
-                        if (m_canEnterShop) {
-                            m_canEnterShop = false;
-                            m_shopPromptLabel->hide();
-                        }
-                    }
+                    updateInteractionUI();
                 } else {
-                    // 如果打开了商店窗口，隐藏提示
-                    if (m_shopPromptLabel->isVisible()) {
-                        m_shopPromptLabel->hide();
+                    if (interactionWidget->isVisible()) {
+                        interactionWidget->hide();
                     }
                 }
             });
@@ -259,6 +253,120 @@ MainWindow::~MainWindow()
 
     delete ui;
 }
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    if (m_engine.GetState() == GameState::InGame) {
+        m_engine.SaveGame();
+    }
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::updateInteractionUI() {
+    if (!player) return;
+    
+    QPointF playerCenter(player->x() + player->boundingRect().width() / 2.0,
+                         player->y() + player->boundingRect().height() / 2.0);
+
+    // 获取附近目标（放宽至半径5格以包含更远的物体，后续再用像素过滤）
+    std::vector<InteractableInfo> nearby = m_engine.CheckNearbyInteractables(5);
+    std::vector<InteractableInfo> inRange;
+    
+    for (const auto& info : nearby) {
+        // 将格坐标转换为像素坐标（假设16x16格）
+        QPointF targetPx(info.pos.x * 16.0 + 8.0, info.pos.y * 16.0 + 8.0);
+        qreal dist = QLineF(playerCenter, targetPx).length();
+        if (dist <= 48.0) { // 3格像素距离
+            inRange.push_back(info);
+        }
+    }
+
+    // 判断列表是否有变化（简化判断：数量不同或ID不同则认为变化）
+    bool changed = false;
+    if (inRange.size() != currentInteractables.size()) {
+        changed = true;
+    } else {
+        for (size_t i = 0; i < inRange.size(); ++i) {
+            if (inRange[i].id != currentInteractables[i].id) {
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    if (changed) {
+        currentInteractables = inRange;
+        selectedInteractionIndex = 0;
+
+        // 清空布局
+        QLayoutItem *child;
+        while ((child = interactionLayout->takeAt(0)) != nullptr) {
+            delete child->widget();
+            delete child;
+        }
+
+        if (currentInteractables.empty()) {
+            interactionWidget->hide();
+        } else {
+            // 重新填充列表
+            for (size_t i = 0; i < currentInteractables.size(); ++i) {
+                const auto& info = currentInteractables[i];
+                QLabel *label = new QLabel(this);
+                
+                QString actionText;
+                if (info.defaultInteraction == InteractionType::PickUpItem) {
+                    actionText = "[拾取] ";
+                } else if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
+                    actionText = "[商店] ";
+                } else if (info.defaultInteraction == InteractionType::TalkToNPC) {
+                    actionText = "[交谈] ";
+                } else if (info.defaultInteraction == InteractionType::StartBattle) {
+                    actionText = "[战斗] ";
+                } else {
+                    actionText = "[交互] ";
+                }
+                
+                label->setText(actionText + QString::fromStdString(info.displayName));
+                label->setFont(QFont("Arial", 14, QFont::Bold));
+                
+                if (static_cast<int>(i) == selectedInteractionIndex) {
+                    label->setStyleSheet("color: yellow; background-color: rgba(255, 255, 255, 50);");
+                } else {
+                    label->setStyleSheet("color: white; background-color: transparent;");
+                }
+                interactionLayout->addWidget(label);
+            }
+
+            interactionWidget->adjustSize();
+            
+            // 位置强制：中心点位于屏幕正中心点与主窗口右下角的连线正中间
+            // 主窗口大小：view->width(), view->height()
+            int targetX = view->width() * 0.75 - interactionWidget->width() / 2.0;
+            int targetY = view->height() * 0.75 - interactionWidget->height() / 2.0;
+            interactionWidget->move(targetX, targetY);
+            
+            interactionWidget->show();
+            interactionWidget->raise();
+        }
+    } else if (!currentInteractables.empty()) {
+        // 如果没有变化，但是需要更新高亮（比如通过按键改变了 selectedInteractionIndex）
+        for (int i = 0; i < interactionLayout->count(); ++i) {
+            QWidget *w = interactionLayout->itemAt(i)->widget();
+            if (QLabel *lbl = qobject_cast<QLabel*>(w)) {
+                if (i == selectedInteractionIndex) {
+                    lbl->setStyleSheet("color: yellow; background-color: rgba(255, 255, 255, 50);");
+                } else {
+                    lbl->setStyleSheet("color: white; background-color: transparent;");
+                }
+            }
+        }
+        
+        // 动态调整位置（应对窗口大小变化）
+        int targetX = view->width() * 0.75 - interactionWidget->width() / 2.0;
+        int targetY = view->height() * 0.75 - interactionWidget->height() / 2.0;
+        interactionWidget->move(targetX, targetY);
+    }
+}
+
 
 // 按键按下触发
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -279,15 +387,43 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             player->setPos(playerLogicalPos.x() - newW / 2.0, playerLogicalPos.y() - newH);
         }
         break;
+    case Qt::Key_Up:
+        if (!currentInteractables.empty()) {
+            selectedInteractionIndex = (selectedInteractionIndex - 1 + currentInteractables.size()) % currentInteractables.size();
+            updateInteractionUI();
+        }
+        break;
+    case Qt::Key_Down:
+        if (!currentInteractables.empty()) {
+            selectedInteractionIndex = (selectedInteractionIndex + 1) % currentInteractables.size();
+            updateInteractionUI();
+        }
+        break;
     case Qt::Key_F:
-        if (m_canEnterShop && m_shopWindow == nullptr) {
-            m_shopWindow = new ShopWindow(&m_engine, this);
-            m_shopWindow->loadItemsFromEngine();
-            m_shopWindow->show();
-            connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
-                m_shopWindow = nullptr;
-            });
-            m_shopPromptLabel->hide();
+        if (!currentInteractables.empty() && selectedInteractionIndex >= 0 && selectedInteractionIndex < currentInteractables.size()) {
+            const auto& info = currentInteractables[selectedInteractionIndex];
+            
+            if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
+                if (m_shopWindow == nullptr) {
+                    m_shopWindow = new ShopWindow(&m_engine, this);
+                    // 状态机会在 ExecuteInteraction 内部切换
+                    m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
+                    m_shopWindow->loadItemsFromEngine();
+                    m_shopWindow->show();
+                    connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
+                        m_shopWindow = nullptr;
+                    });
+                    if (interactionWidget->isVisible()) {
+                        interactionWidget->hide();
+                    }
+                }
+            } else {
+                std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
+                qDebug() << "Interaction result:" << QString::fromStdString(result);
+                // 强制刷新：由于物品可能被拾取/被移除，清空当前列表并立刻重新检测
+                currentInteractables.clear();
+                updateInteractionUI();
+            }
         }
         break;
     case Qt::Key_M:

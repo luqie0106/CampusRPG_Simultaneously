@@ -458,6 +458,16 @@ std::string GameEngine::_SettleVictory() {
     bool leveled = m_player->AddExp(gainExp);
     m_player->AddGold(gainGold);
 
+    // Boss 掉落物处理
+    if (m_currentEnemy->GetDropItem()) {
+        int dropId = GenerateItemId();
+        GamePoint pPos = GetPlayerPos();
+        InteractableInfo dropInfo = InteractableInfo::MakeGroundItem(
+            dropId, pPos, m_currentEnemy->GetDropItem()->getName(), m_currentEnemy->GetDropItem());
+        AddMapInteractable(dropInfo);
+        ss << "🎁 掉落物：【" << m_currentEnemy->GetDropItem()->getName() << "】落在你脚下了！\n";
+    }
+
     if (leveled) {
         ss << "🌟 恭喜升级！当前等级：" << m_player->GetLevel() << "\n";
     }
@@ -727,6 +737,21 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
             return "【" + info->displayName + "】：「同学，好久不见！」\n（任务系统开发中…）\n";
         }
 
+        case InteractionType::PickUpItem: {
+            if (!info->itemData) {
+                return "错误：该掉落物数据为空。\n";
+            }
+            try {
+                // 放入背包
+                m_player->GetBackpack().AddItem(info->itemData->Clone());
+                std::string itemName = info->itemData->getName();
+                m_worldMap.RemoveInteractable(targetId);
+                return "【拾取】你捡起了 " + itemName + "。\n";
+            } catch (const std::exception& e) {
+                return std::string("拾取失败：") + e.what() + "\n";
+            }
+        }
+
         default:
             return "错误：未知的交互类型。\n";
     }
@@ -742,6 +767,10 @@ void GameEngine::ResetPlayerToSpawn() {
 // 通过引擎统一注册，避免外部直接操作 WorldMap 内部状态
 void GameEngine::AddMapInteractable(InteractableInfo info) {
     m_worldMap.AddInteractable(std::move(info));
+}
+
+int GameEngine::GenerateItemId() {
+    return m_nextItemEntityId++;
 }
 
 // 【WorldMap 直接访问】供 QtMapLoader 在地图加载阶段使用

@@ -45,6 +45,9 @@ int  Enemy::GetDefense() const { return defense; }
 int  Enemy::GetExp()     const { return exp; }
 int  Enemy::GetGold()    const { return gold; }
 
+std::shared_ptr<Item> Enemy::GetDropItem() const { return dropItem; }
+void Enemy::SetDropItem(std::shared_ptr<Item> item) { dropItem = item; }
+
 bool Enemy::IsStaggered() const { return isStaggered; }
 
 void Enemy::TakeDamage(int damage) {
@@ -192,20 +195,26 @@ Enemy Enemy::GangMember() {
 // 教导主任：雷厉风行，但只要破韧就能让他停顿一拍（1 回合）
 Enemy Enemy::DeanOfStudents() {
     //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪  debuffType                  概率  每回合量  回合
-    return Enemy("教导主任",         500,  25,  4,  30,  50,    5,   1,
+    Enemy boss("教导主任",         500,  25,  4,  30,  50,    5,   1,
                  StatusEffectType::Wither,   40,   5,          2);
+    boss.SetDropItem(AchievementItem::ConfiscatedPhone());
+    return boss;
 }
 
 // 体育委员长：力量型 Boss，体力充沛；破韧后喘息 2 回合
 Enemy Enemy::PECommittee() {
-    return Enemy("体育委员长",       800,  35,  6,  55,  80,    8,   2,
+    Enemy boss("体育委员长",       800,  35,  6,  55,  80,    8,   2,
                  StatusEffectType::Weakness, 60,   8,          2);
+    boss.SetDropItem(AchievementItem::Whistle());
+    return boss;
 }
 
 // 校长：终极 Boss，防御极高；破韧后陷入长达 3 回合的混乱
 Enemy Enemy::Principal() {
-    return Enemy("校长",            1200,  45, 10, 100, 200,   12,   3,
+    Enemy boss("校长",            1200,  45, 10, 100, 200,   12,   3,
                  StatusEffectType::Poison,   75,   8,          3);
+    boss.SetDropItem(AchievementItem::Diploma());
+    return boss;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -217,8 +226,10 @@ Enemy Enemy::Principal() {
 // 击杀奖励：EXP=80 GOLD=120（约为白天 Boss 的 2~3 倍）
 Enemy Enemy::DormGuard() {
     //               名字           HP  ATK DEF  EXP  GOLD  韧度  瘫痪  debuffType                概率  每回合量  回合
-    return Enemy("宿管阿姨",         600,  30,  15,  80,  120,   10,   2,
+    Enemy boss("宿管阿姨",         600,  30,  15,  80,  120,   10,   2,
                  StatusEffectType::Wither,   60,   8,          2);
+    boss.SetDropItem(AchievementItem::MasterKey());
+    return boss;
 }
 
 // 午夜卷王幽灵：夜晚强力小怪，血量极少但攻击极高，无韧度

@@ -40,3 +40,6 @@ CMakeUserPresets.json
 
 # 排除自动整理头文件的脚本
 refactor_includes.py
+
+*.patch
+*.sh

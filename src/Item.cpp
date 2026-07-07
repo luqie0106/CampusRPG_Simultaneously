@@ -17,6 +17,10 @@ std::stringstream Item::Show() const {
     return ss;
 }
 
+std::unique_ptr<Item> Item::Clone() const {
+    return std::make_unique<Item>(*this);
+}
+
 Food::Food(std::string name, int value, int HpRecovery, int AtkBuff, int DefBuff,
            int Duration, StatusEffectType effectType, int effectValue)
     : Item(name, value), HpRecovery(HpRecovery), AtkBuff(AtkBuff), DefBuff(DefBuff),
@@ -42,6 +46,10 @@ std::stringstream Food::Show() const {
     return ss;
 }
 
+std::unique_ptr<Item> Food::Clone() const {
+    return std::make_unique<Food>(*this);
+}
+
 Medicine::Medicine(std::string name, int value, int HpRecovery) : 
     Item(name, value), HpRecovery(HpRecovery) {}
 
@@ -51,6 +59,10 @@ std::stringstream Medicine::Show() const {
     std::stringstream ss;
     ss << "【药品】" << getName() << " | 效果: 恢复 " << HpRecovery << " 点精力";
     return ss;
+}
+
+std::unique_ptr<Item> Medicine::Clone() const {
+    return std::make_unique<Medicine>(*this);
 }
 
 Equipment::Equipment(std::string name, int value, int defense_bonus, int attack_bonus,
@@ -78,6 +90,10 @@ std::stringstream Equipment::Show() const {
     if (stagger_bonus > 0)  ss << " 破韧+" << stagger_bonus;
     ss << " 耐久:" << durability;
     return ss;
+}
+
+std::unique_ptr<Item> Equipment::Clone() const {
+    return std::make_unique<Equipment>(*this);
 }
 
 // ========== Food 工厂 ==========
@@ -208,4 +224,34 @@ std::shared_ptr<Equipment> Equipment::NightWalkerCloak() {
     // 夜行衣：防御+5，闪避+40%，耐久 800，身体槽
     //                     name      value  def  atk  dur          slot          dodge
     return std::make_shared<Equipment>("夜行衣", 500, 5, 0, 800, EquipSlot::Body, 40);
+}
+
+// ========== AchievementItem 实现与工厂 ==========
+AchievementItem::AchievementItem(std::string name, int value)
+    : Item(name, value) {}
+
+std::stringstream AchievementItem::Show() const {
+    std::stringstream ss;
+    ss << "【成就】" << getName() << " | 价值: " << getValue() << " (作为实力的证明)";
+    return ss;
+}
+
+std::unique_ptr<Item> AchievementItem::Clone() const {
+    return std::make_unique<AchievementItem>(*this);
+}
+
+std::shared_ptr<AchievementItem> AchievementItem::ConfiscatedPhone() {
+    return std::make_shared<AchievementItem>("被没收的手机", 100);
+}
+
+std::shared_ptr<AchievementItem> AchievementItem::Whistle() {
+    return std::make_shared<AchievementItem>("破旧的哨子", 150);
+}
+
+std::shared_ptr<AchievementItem> AchievementItem::Diploma() {
+    return std::make_shared<AchievementItem>("绝版毕业证", 500);
+}
+
+std::shared_ptr<AchievementItem> AchievementItem::MasterKey() {
+    return std::make_shared<AchievementItem>("宿舍万能钥匙", 300);
 }
