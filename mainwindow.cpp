@@ -4,6 +4,8 @@
 #include "ui_mainwindow.h"
 #include "QtMapLoader.h"
 #include "ShopWindow.h"
+#include "BackpackWindow.h"
+#include "CharacterSelectDialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     keyD = false;
     currentCharacter = 0;
     m_shopWindow = nullptr;
+    m_backpackWindow = nullptr;
     currentPathIndex = 0;
     selectedInteractionIndex = 0;
 
@@ -53,6 +56,28 @@ MainWindow::MainWindow(QWidget *parent)
 
     // ========== 初始化游戏引擎 ==========
     m_engine.Init();
+
+    // 读档逻辑
+    m_engine.LoadGame();
+
+    if (m_engine.GetState() != GameState::InGame) {
+        // ========== 角色选择对话框 ==========
+        m_charSelectDialog = new CharacterSelectDialog(&m_engine, this);
+        m_charSelectDialog->exec();
+        if (!m_charSelectDialog->isPlayerCreated()) {
+            // 用户取消或未创建角色，直接退出
+            QTimer::singleShot(0, this, &QMainWindow::close);
+            return;
+        }
+        // 根据选择的职业设置对应的角色精灵
+        // 1=Athlete->角色0, 2=Nerd->角色1, 3=Steve->角色2
+        currentCharacter = m_charSelectDialog->selectedClass() - 1;
+        delete m_charSelectDialog;
+        m_charSelectDialog = nullptr;
+    } else {
+        // 如果有存档，使用默认的贴图（因为存档尚未保存角色贴图信息）
+        currentCharacter = 2; // 默认 Steve
+    }
 
     // ========== 无缝加载大世界地图（同步碰撞数据和实体到引擎）==========
     QString worldPath = QString(PROJECT_DATA_DIR) + "/maps/game.world";
@@ -113,20 +138,15 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     player = new QGraphicsPixmapItem();
-    if (!playerFrames[0][3].isNull()) {
-        player->setPixmap(playerFrames[0][3]); // 默认角色0朝下
+    if (!playerFrames[currentCharacter][3].isNull()) {
+        player->setPixmap(playerFrames[currentCharacter][3]); // 默认朝下
     }
     player->setZValue(10); // 层级高于地图，不会被瓦片遮挡
     mapScene->addItem(player);
-    
-    // 读档逻辑
-    m_engine.LoadGame();
     GamePoint pos;
     if (m_engine.GetState() == GameState::InGame) {
         pos = m_engine.GetWorldMap().GetPlayerPos();
     } else {
-        // 显式创建默认角色，防止后续因 m_player 为空而在访问时报错
-        m_engine.CreatePlayer("Steve", 3);
         pos = m_engine.GetWorldMap().GetSpawnPoint();
     }
     
@@ -153,7 +173,7 @@ MainWindow::MainWindow(QWidget *parent)
                     GamePoint targetPoint = autoPath[currentPathIndex];
                     // 目标像素为瓦片中心
                     QPointF targetPx(targetPoint.x * 16.0 + 8.0, targetPoint.y * 16.0 + 8.0);
-                    
+
                     // 以玩家 logicalPos 计算方向
                     qreal diffX = targetPx.x() - playerLogicalPos.x();
                     qreal diffY = targetPx.y() - playerLogicalPos.y();
@@ -192,7 +212,7 @@ MainWindow::MainWindow(QWidget *parent)
                 // ========== 碰撞检测与边界限制 ==========
                 QRectF mapRange = mapScene->sceneRect();
                 QRectF playerSize = player->boundingRect();
-                
+
                 // 1. 临时目标坐标，先应用场景最外层边界限制（平滑贴边）
                 qreal nextX = player->x() + dx;
                 qreal nextY = player->y() + dy;
@@ -450,6 +470,18 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             bigMapView->show();
             bigMapView->raise();
             bigMapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
+        }
+        break;
+    case Qt::Key_B:
+        if (m_backpackWindow == nullptr) {
+            m_backpackWindow = new BackpackWindow(&m_engine, nullptr);
+            connect(m_backpackWindow, &QObject::destroyed, this, [this]() {
+                m_backpackWindow = nullptr;
+            });
+            m_backpackWindow->show();
+        } else {
+            m_backpackWindow->raise();
+            m_backpackWindow->activateWindow();
         }
         break;
     default:

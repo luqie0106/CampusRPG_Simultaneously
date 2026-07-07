@@ -4,6 +4,8 @@
 #include "GameEngine.h"
 
 class ShopWindow;
+class BackpackWindow;
+class CharacterSelectDialog;
 class QLabel;
 class QGraphicsView;
 class QGraphicsScene;
@@ -71,5 +73,11 @@ private:
     void updateInteractionUI();
     
     ShopWindow *m_shopWindow;
+
+    // 背包交互
+    BackpackWindow *m_backpackWindow;
+
+    // 角色选择
+    CharacterSelectDialog *m_charSelectDialog;
 };
 
