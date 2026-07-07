@@ -56,20 +56,7 @@ std::stringstream BlackMarket::BuyItem(std::shared_ptr<Character> player, int it
     player->SpendGold(bmi.item->getValue());
 
     // 按实际子类型克隆物品到背包
-    std::unique_ptr<Item> newItem;
-    if (auto food = std::dynamic_pointer_cast<Food>(bmi.item)) {
-        newItem = std::make_unique<Food>(food->getName(), food->getValue(),
-                                         food->GetHpRecovery(), food->GetAtkBuff(),
-                                         food->GetDefBuff(), food->GetDuration(),
-                                         food->GetEffectType(), food->GetEffectValue());
-    } else if (auto equip = std::dynamic_pointer_cast<Equipment>(bmi.item)) {
-        newItem = std::make_unique<Equipment>(equip->getName(), equip->getValue(),
-                                              equip->GetDefenseBonus(), equip->GetAttackBonus(),
-                                              equip->GetDurability(), equip->GetSlot(),
-                                              equip->GetDodgeBonus());
-    } else {
-        newItem = std::make_unique<Item>(bmi.item->getName(), bmi.item->getValue());
-    }
+    std::unique_ptr<Item> newItem = bmi.item->Clone();
 
     player->GetBackpack().AddItem(std::move(newItem));
     bmi.stock--;

@@ -176,25 +176,8 @@ void ShopWindow::buildUI() {
                 return;
             }
 
-            const ShopEntry &entry = m_entries[itemIndex];
-            int playerGold = m_engine->GetPlayerGold();
-
-            if (playerGold < entry.price) {
-                QMessageBox::warning(this, "金币不足",
-                    QString("需要 %1 金币，你只有 %2 金币").arg(entry.price).arg(playerGold));
-                return;
-            }
-
-            // 扣除金币
-            m_engine->GetPlayer()->SpendGold(entry.price);
-
-            // 创建物品并添加到背包
-            std::unique_ptr<Item> newItem = std::make_unique<Item>(
-                entry.name.toStdString(), entry.price);
-            m_engine->GetPlayer()->GetBackpack().AddItem(std::move(newItem));
-
-            QMessageBox::information(this, "购买成功",
-                QString("购买了 %1，花费 %2 金币").arg(entry.name).arg(entry.price));
+            std::string result = m_engine->BuyItem(itemIndex + 1);
+            QMessageBox::information(this, "购买结果", QString::fromStdString(result));
             refreshShopList();
         });
 

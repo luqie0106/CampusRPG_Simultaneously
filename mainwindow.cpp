@@ -128,6 +128,12 @@ MainWindow::MainWindow(QWidget *parent)
     qDebug() << "开始加载大世界:" << worldPath;
     QtMapLoader::LoadWorldToScene(worldPath, mapScene, &m_engine.GetWorldMap());
 
+    for (QGraphicsItem* item : mapScene->items()) {
+        if (!item->data(0).isNull()) {
+            interactableGraphics[item->data(0).toInt()] = item;
+        }
+    }
+
     // 锁死整个大世界地图边界
     mapScene->setSceneRect(mapScene->itemsBoundingRect());
 
@@ -393,6 +399,10 @@ void MainWindow::updateInteractionUI() {
         qreal dist = QLineF(playerCenter, targetPx).length();
         if (dist <= 48.0) { // 3格像素距离
             inRange.push_back(info);
+            // 如果是怪物，并且在附近，让怪物面对玩家
+            if (info.type == InteractableType::Enemy || info.type == InteractableType::Boss) {
+                updateEntityFacing(info.id, playerLogicalPos);
+            }
         }
     }
 
@@ -794,4 +804,50 @@ void MainWindow::updateEquipmentUI() {
 void MainWindow::onBattleItemUsed(const QString& resultLog) {
     updateBattleUI();
     updateEquipmentUI();
+}
+
+void MainWindow::updateEntityFacing(int entityId, const QPointF& playerPx) {
+    if (!interactableGraphics.contains(entityId)) return;
+    QGraphicsItem* item = interactableGraphics[entityId];
+    if (item->data(1).toString() != "Monster") return;
+
+    QGraphicsPixmapItem* pixItem = dynamic_cast<QGraphicsPixmapItem*>(item);
+    if (!pixItem) return;
+
+    bool isBoss = item->data(2).toBool();
+
+    QPointF enemyCenter = pixItem->sceneBoundingRect().center();
+    qreal dx = playerPx.x() - enemyCenter.x();
+    qreal dy = playerPx.y() - enemyCenter.y();
+
+    int w = pixItem->pixmap().width();
+    int h = pixItem->pixmap().height();
+    QPixmap newPix(w, h);
+    newPix.fill(Qt::transparent);
+    QPainter p(&newPix);
+    p.fillRect(0, 0, w, h, QColor(isBoss ? 128 : 255, 0, isBoss ? 128 : 0, 200));
+    
+    p.setBrush(Qt::black);
+    p.setPen(Qt::NoPen);
+
+    if (qAbs(dx) > qAbs(dy)) {
+        if (dx > 0) {
+            p.drawEllipse(w - 6, h / 2 - 4, 4, 4);
+            p.drawEllipse(w - 6, h / 2 + 4, 4, 4);
+        } else {
+            p.drawEllipse(2, h / 2 - 4, 4, 4);
+            p.drawEllipse(2, h / 2 + 4, 4, 4);
+        }
+    } else {
+        if (dy > 0) {
+            p.drawEllipse(w / 2 - 4, h - 6, 4, 4);
+            p.drawEllipse(w / 2 + 4, h - 6, 4, 4);
+        } else {
+            p.setBrush(Qt::darkGray);
+            p.drawEllipse(w / 2 - 4, 2, 4, 4);
+            p.drawEllipse(w / 2 + 4, 2, 4, 4);
+        }
+    }
+    
+    pixItem->setPixmap(newPix);
 }

@@ -96,16 +96,12 @@ void BackpackWindow::refreshBackpack() {
     grid->setSpacing(12);
 
     int displayIndex = 0;
-    for (auto it = firstIndexMap.constBegin(); it != firstIndexMap.constEnd(); ++it) {
-        QString itemName = it.key();
-        int count = itemCountMap.value(itemName, 0);
-        int itemIndex = it.value();
 
+    auto addCard = [&](const QString& itemName, int count, int itemIndex, bool isEquipped, EquipSlot equipSlot) {
         int row = displayIndex / cols;
         int col = displayIndex % cols;
         displayIndex++;
 
-        // 卡片容器
         QWidget *card = new QWidget(m_scrollContent);
         card->setFixedSize(150, 200);
         card->setStyleSheet(
@@ -115,7 +111,6 @@ void BackpackWindow::refreshBackpack() {
         cardLayout->setContentsMargins(8, 8, 8, 8);
         cardLayout->setSpacing(4);
 
-        // 物品图片
         QString imagePath = getImagePath(itemName);
         QLabel *imgLabel = new QLabel(card);
         QPixmap pix(imagePath);
@@ -129,37 +124,45 @@ void BackpackWindow::refreshBackpack() {
         imgLabel->setFixedHeight(72);
         cardLayout->addWidget(imgLabel);
 
-        // 物品名称
         QLabel *nameLabel = new QLabel(itemName, card);
-        nameLabel->setStyleSheet("color: white; font-size: 11px;");
+        nameLabel->setStyleSheet(isEquipped ? "color: #4CAF50; font-size: 11px; font-weight: bold;" : "color: white; font-size: 11px;");
         nameLabel->setAlignment(Qt::AlignCenter);
         nameLabel->setWordWrap(true);
         nameLabel->setFixedHeight(32);
         cardLayout->addWidget(nameLabel);
 
-        // 数量显示
-        QLabel *countLabel = new QLabel(QString("数量: %1").arg(count), card);
-        countLabel->setStyleSheet("color: #aaa; font-size: 12px; font-weight: bold;");
+        QLabel *countLabel = new QLabel(isEquipped ? "已装备" : QString("数量: %1").arg(count), card);
+        countLabel->setStyleSheet(isEquipped ? "color: #4CAF50; font-size: 12px; font-weight: bold;" : "color: #aaa; font-size: 12px; font-weight: bold;");
         countLabel->setAlignment(Qt::AlignCenter);
         cardLayout->addWidget(countLabel);
 
-        // 使用按钮（只有数量>0时才可点击）
         QHBoxLayout *btnRow = new QHBoxLayout();
-        QPushButton *useBtn = new QPushButton("使用", card);
+        QPushButton *useBtn = new QPushButton(isEquipped ? "卸下" : "使用", card);
         useBtn->setFixedSize(60, 24);
-        useBtn->setEnabled(count > 0);
-        useBtn->setStyleSheet(
-            "QPushButton { background-color: #4CAF50; color: white; border-radius: 3px; font-size: 11px; }"
-            "QPushButton:hover { background-color: #66BB6A; }"
-            "QPushButton:disabled { background-color: #666; color: #999; }");
+        useBtn->setEnabled(count > 0 || isEquipped);
+        if (isEquipped) {
+            useBtn->setStyleSheet(
+                "QPushButton { background-color: #FF9800; color: white; border-radius: 3px; font-size: 11px; }"
+                "QPushButton:hover { background-color: #FFB74D; }"
+            );
+        } else {
+            useBtn->setStyleSheet(
+                "QPushButton { background-color: #4CAF50; color: white; border-radius: 3px; font-size: 11px; }"
+                "QPushButton:hover { background-color: #66BB6A; }"
+                "QPushButton:disabled { background-color: #666; color: #999; }");
+        }
 
-        connect(useBtn, &QPushButton::clicked, this, [this, itemIndex, itemName]() {
+        connect(useBtn, &QPushButton::clicked, this, [this, itemIndex, isEquipped, equipSlot]() {
             if (!m_engine || m_engine->GetPlayer() == nullptr) {
                 QMessageBox::warning(this, "错误", "请先创建角色");
                 return;
             }
 
-            if (itemIndex > 0) {
+            if (isEquipped) {
+                m_engine->GetPlayer()->UnequipItem(equipSlot);
+                QMessageBox::information(this, "卸下装备", "装备已卸下放入背包");
+                refreshBackpack();
+            } else if (itemIndex > 0) {
                 std::string result;
                 if (m_engine->GetState() == GameState::Battle) {
                     result = m_engine->BattleUseItemBeforeAction(itemIndex);
@@ -175,39 +178,57 @@ void BackpackWindow::refreshBackpack() {
         btnRow->addWidget(useBtn);
         btnRow->addStretch();
 
-        // 丢弃按钮（只有数量>0时才可点击）
-        QPushButton *dropBtn = new QPushButton("丢弃", card);
-        dropBtn->setFixedSize(60, 24);
-        dropBtn->setEnabled(count > 0);
-        dropBtn->setStyleSheet(
-            "QPushButton { background-color: #f44336; color: white; border-radius: 3px; font-size: 11px; }"
-            "QPushButton:hover { background-color: #ef5350; }"
-            "QPushButton:disabled { background-color: #666; color: #999; }");
+        if (!isEquipped) {
+            QPushButton *dropBtn = new QPushButton("丢弃", card);
+            dropBtn->setFixedSize(60, 24);
+            dropBtn->setEnabled(count > 0);
+            dropBtn->setStyleSheet(
+                "QPushButton { background-color: #f44336; color: white; border-radius: 3px; font-size: 11px; }"
+                "QPushButton:hover { background-color: #ef5350; }"
+                "QPushButton:disabled { background-color: #666; color: #999; }");
 
-        connect(dropBtn, &QPushButton::clicked, this, [this, itemIndex, itemName]() {
-            if (!m_engine || m_engine->GetPlayer() == nullptr) {
-                QMessageBox::warning(this, "错误", "请先创建角色");
-                return;
-            }
-
-            if (itemIndex > 0) {
-                QMessageBox::StandardButton reply = QMessageBox::question(
-                    this, "确认丢弃",
-                    QString("确定要丢弃 %1 吗？").arg(itemName),
-                    QMessageBox::Yes | QMessageBox::No);
-
-                if (reply == QMessageBox::Yes) {
-                    std::string result = m_engine->RemoveBackpackItem(itemIndex);
-                    QMessageBox::information(this, "丢弃物品", QString::fromStdString(result));
-                    refreshBackpack();
+            connect(dropBtn, &QPushButton::clicked, this, [this, itemIndex, itemName]() {
+                if (!m_engine || m_engine->GetPlayer() == nullptr) {
+                    QMessageBox::warning(this, "错误", "请先创建角色");
+                    return;
                 }
-            }
-        });
 
-        btnRow->addWidget(dropBtn);
+                if (itemIndex > 0) {
+                    QMessageBox::StandardButton reply = QMessageBox::question(
+                        this, "确认丢弃",
+                        QString("确定要丢弃 %1 吗？").arg(itemName),
+                        QMessageBox::Yes | QMessageBox::No);
+
+                    if (reply == QMessageBox::Yes) {
+                        std::string result = m_engine->RemoveBackpackItem(itemIndex);
+                        QMessageBox::information(this, "丢弃物品", QString::fromStdString(result));
+                        refreshBackpack();
+                    }
+                }
+            });
+            btnRow->addWidget(dropBtn);
+        }
+
         cardLayout->addLayout(btnRow);
-
         grid->addWidget(card, row, col);
+    };
+
+    // 显示身上已装备的物品
+    EquipSlot eqSlots[] = { EquipSlot::Weapon, EquipSlot::Head, EquipSlot::Body, EquipSlot::Legs, EquipSlot::Feet };
+    for (int i = 0; i < 5; ++i) {
+        auto eq = m_engine->GetPlayer()->GetEquipmentAt(eqSlots[i]);
+        if (eq) {
+            addCard(QString::fromStdString(eq->getName()), 1, 0, true, eqSlots[i]);
+        }
+    }
+
+    // 显示背包里的物品
+    for (auto it = firstIndexMap.constBegin(); it != firstIndexMap.constEnd(); ++it) {
+        QString itemName = it.key();
+        int count = itemCountMap.value(itemName, 0);
+        int itemIndex = it.value();
+
+        addCard(itemName, count, itemIndex, false, EquipSlot::Head); // EquipSlot is ignored when !isEquipped
     }
 
     m_scrollLayout->addLayout(grid);

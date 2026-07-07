@@ -36,6 +36,10 @@ protected:
     // 窗口关闭事件，用于自动存档
     void closeEvent(QCloseEvent *event) override;
 
+    // ========== 地图实体管理 ==========
+    QMap<int, QGraphicsItem*> interactableGraphics;
+    void updateEntityFacing(int entityId, const QPointF& playerPx);
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *mapScene;

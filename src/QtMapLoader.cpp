@@ -130,15 +130,22 @@ static void parseObjectGroup(const QJsonObject& layerObj,
 
             // 在地图上绘制一个临时方块作为怪物占位符
             if (scene) {
-                QGraphicsRectItem* rect = new QGraphicsRectItem(px + pixelOffsetX, py + pixelOffsetY, tileWidth, tileHeight);
+                QPixmap pix(tileWidth, tileHeight);
+                pix.fill(Qt::transparent);
+                QPainter painter(&pix);
                 if (isBoss) {
-                    rect->setBrush(QBrush(QColor(128, 0, 128, 200))); // Boss是紫色
+                    painter.fillRect(0, 0, tileWidth, tileHeight, QColor(128, 0, 128, 200)); // Purple
                 } else {
-                    rect->setBrush(QBrush(QColor(255, 0, 0, 200))); // 小怪是红色
+                    painter.fillRect(0, 0, tileWidth, tileHeight, QColor(255, 0, 0, 200)); // Red
                 }
-                rect->setPen(QPen(Qt::NoPen));
-                rect->setZValue(5); // 层级比地图高，比玩家低
-                scene->addItem(rect);
+                
+                QGraphicsPixmapItem* item = new QGraphicsPixmapItem(pix);
+                item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+                item->setZValue(5);
+                item->setData(0, objId);
+                item->setData(1, "Monster");
+                item->setData(2, isBoss);
+                scene->addItem(item);
             }
 
             qDebug() << "  [Monster] id=" << objId << "isBoss=" << isBoss
