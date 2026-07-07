@@ -1,7 +1,4 @@
 #include "Common.h"
-#include <QLineEdit>
-#include <QRadioButton>
-#include <QGroupBox>
 
 #include "../include/CharacterSelectDialog.h"
 

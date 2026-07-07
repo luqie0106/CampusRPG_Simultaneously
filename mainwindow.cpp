@@ -6,15 +6,6 @@
 #include "ShopWindow.h"
 #include "BackpackWindow.h"
 #include "CharacterSelectDialog.h"
-#include <QLabel>
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
-#include <QKeyEvent>
-#include <QDebug>
-#include <QTimer>
-#include <QVBoxLayout>
-#include <QProgressBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

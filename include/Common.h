@@ -61,3 +61,9 @@
 
 // Auto-extracted Standard Libraries
 #include <QCloseEvent>
+
+// Auto-extracted Standard Libraries
+#include <QGroupBox>
+#include <QLineEdit>
+#include <QProgressBar>
+#include <QRadioButton>
