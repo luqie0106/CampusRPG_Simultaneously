@@ -199,9 +199,53 @@
          "visible":true,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":5,
+         "name":"obj_monster",
+         "objects":[
+                {
+                 "height":29,
+                 "id":2,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"atk",
+                         "type":"int",
+                         "value":80
+                        }, 
+                        {
+                         "name":"hp",
+                         "type":"int",
+                         "value":500
+                        }, 
+                        {
+                         "name":"isBoss",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spriteId",
+                         "type":"int",
+                         "value":203
+                        }],
+                 "rotation":0,
+                 "type":"Monster",
+                 "visible":true,
+                 "width":31,
+                 "x":270,
+                 "y":65
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":5,
- "nextobjectid":2,
+ "nextlayerid":6,
+ "nextobjectid":5,
  "orientation":"orthogonal",
  "properties":[
         {
