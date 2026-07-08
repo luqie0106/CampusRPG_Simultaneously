@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "WorldMap.h"
+#include <array>
 
 class QtMapLoader {
 public:
@@ -24,4 +25,8 @@ public:
     static void LoadWorldToScene(const QString& worldJsonPath,
                                  QGraphicsScene* scene,
                                  WorldMap* worldMap = nullptr);
+
+    // 获取怪物/NPC 的 4 方向贴图 [0]=左, [1]=上, [2]=右, [3]=下
+    // spriteId: Tiled 地图中配置的 spriteId 属性值
+    static const std::array<QPixmap, 4>* GetEntitySprites(int spriteId);
 };
