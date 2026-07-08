@@ -58,6 +58,8 @@ struct InteractableInfo {
     // 仅 type == GroundItem 时有效
     std::shared_ptr<Item> itemData;
 
+    bool isNightOnly = false; // 是否只在夜间出现
+
     // ── 便捷工厂方法 ─────────────────────────────────────────────────
     // 怪物/Boss 点位：传入 Enemy 工厂生成的实例作为模板
     static InteractableInfo MakeEnemy(int id, GamePoint pos,

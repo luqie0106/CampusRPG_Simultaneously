@@ -6,7 +6,7 @@
 class ShopWindow : public QWidget {
     Q_OBJECT
 public:
-    explicit ShopWindow(GameEngine *engine, QWidget *parent = nullptr);
+    explicit ShopWindow(GameEngine *engine, bool isBlackMarket = false, QWidget *parent = nullptr);
     ~ShopWindow();
 
     void loadItemsFromEngine();
@@ -20,6 +20,7 @@ private:
     QWidget *m_scrollContent;
     QVBoxLayout *m_scrollLayout;
     QLabel *m_goldLabel;
+    bool m_isBlackMarket;
 
     struct ShopEntry {
         QString name;

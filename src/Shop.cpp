@@ -51,11 +51,18 @@ void Shop::SetEngine(GameEngine* engine) {
 
 void Shop::RefreshShop() {
     int currentDays = 0;
+    int currentHours = 0;
     if (m_engine) {
         currentDays = m_engine->GetGameTime().Day;
+        currentHours = m_engine->GetGameTime().Hour;
     }
 
-    if (currentDays >= lastRefreshDays + 1) {
+    int currentCycle = currentDays;
+    if (currentHours < 6) {
+        currentCycle--;
+    }
+
+    if (currentCycle > lastRefreshDays) {
         std::vector<ShopItem> pool = m_allShopItems;
         for (int i = (int)pool.size() - 1; i > 0; --i) {
             int j = RNG::RandInt(0, i);
@@ -68,11 +75,12 @@ void Shop::RefreshShop() {
             m_shopItems.push_back(pool[i]);
         }
         
-        lastRefreshDays = currentDays;
+        lastRefreshDays = currentCycle;
     }
 }
 
-const std::vector<ShopItem>& Shop::GetShopItems() const {
+const std::vector<ShopItem>& Shop::GetShopItems() {
+    RefreshShop();
     return m_shopItems;
 }
 

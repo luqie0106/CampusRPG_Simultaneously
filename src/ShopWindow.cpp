@@ -1,9 +1,9 @@
 #include "Common.h"
 #include "../include/ShopWindow.h"
 
-ShopWindow::ShopWindow(GameEngine *engine, QWidget *parent)
-    : QWidget(parent), m_engine(engine) {
-    setWindowTitle("校园商店");
+ShopWindow::ShopWindow(GameEngine *engine, bool isBlackMarket, QWidget *parent)
+    : QWidget(parent), m_engine(engine), m_isBlackMarket(isBlackMarket) {
+    setWindowTitle(m_isBlackMarket ? "神秘黑市" : "校园商店");
     setMinimumSize(700, 500);
     setStyleSheet("background-color: #2c2c2c;");
     setAttribute(Qt::WA_DeleteOnClose);
@@ -12,9 +12,10 @@ ShopWindow::ShopWindow(GameEngine *engine, QWidget *parent)
 
     // 顶部：标题 + 金币
     QHBoxLayout *topBar = new QHBoxLayout();
-    QLabel *title = new QLabel("校园商店", this);
+    QLabel *title = new QLabel(m_isBlackMarket ? "神秘黑市" : "校园商店", this);
     title->setStyleSheet("color: white; font-size: 22px; font-weight: bold;");
     topBar->addWidget(title);
+
     topBar->addStretch();
     m_goldLabel = new QLabel(this);
     m_goldLabel->setStyleSheet("color: gold; font-size: 18px;");
@@ -51,15 +52,28 @@ void ShopWindow::loadItemsFromEngine() {
     
     if (!m_engine) return;
     
-    const auto& shopItems = m_engine->GetShopItemList();
-    for (const auto& shopItem : shopItems) {
-        if (!shopItem.item) continue;
-        
-        ShopEntry entry;
-        entry.name = QString::fromStdString(shopItem.item->getName());
-        entry.price = shopItem.item->getValue();
-        entry.imagePath = getImagePath(entry.name);
-        m_entries.append(entry);
+    if (m_isBlackMarket) {
+        const auto& shopItems = m_engine->GetBlackMarketItems();
+        for (const auto& shopItem : shopItems) {
+            if (!shopItem.item) continue;
+            
+            ShopEntry entry;
+            entry.name = QString::fromStdString(shopItem.item->getName());
+            entry.price = shopItem.item->getValue();
+            entry.imagePath = getImagePath(entry.name);
+            m_entries.append(entry);
+        }
+    } else {
+        const auto& shopItems = m_engine->GetShopItemList();
+        for (const auto& shopItem : shopItems) {
+            if (!shopItem.item) continue;
+            
+            ShopEntry entry;
+            entry.name = QString::fromStdString(shopItem.item->getName());
+            entry.price = shopItem.item->getValue();
+            entry.imagePath = getImagePath(entry.name);
+            m_entries.append(entry);
+        }
     }
 
     buildUI();
@@ -176,7 +190,12 @@ void ShopWindow::buildUI() {
                 return;
             }
 
-            std::string result = m_engine->BuyItem(itemIndex + 1);
+            std::string result;
+            if (m_isBlackMarket) {
+                result = m_engine->BuyBlackMarketItem(itemIndex + 1);
+            } else {
+                result = m_engine->BuyItem(itemIndex + 1);
+            }
             QMessageBox::information(this, "购买结果", QString::fromStdString(result));
             refreshShopList();
         });

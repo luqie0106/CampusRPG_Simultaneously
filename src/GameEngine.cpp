@@ -206,8 +206,6 @@ std::string GameEngine::UseBackpackItem(int index) {
     if (!m_player) return "错误：尚未创建角色。\n";
     try {
         std::string result = m_player->GetBackpack().UseItem(index, *m_player);
-        // 使用后刷新展示
-        result += "\n" + GetBackpackText();
         return result;
     } catch (const std::exception& e) {
         return std::string("使用失败：") + e.what() + "\n";
@@ -218,7 +216,6 @@ std::string GameEngine::RemoveBackpackItem(int index) {
     if (!m_player) return "错误：尚未创建角色。\n";
     try {
         std::string result = m_player->GetBackpack().RemoveItem(index);
-        result += "\n" + GetBackpackText();
         return result;
     } catch (const std::exception& e) {
         return std::string("丢弃失败：") + e.what() + "\n";
@@ -641,7 +638,7 @@ const std::vector<std::unique_ptr<Item>>& GameEngine::GetBackpackItems() const {
 }
 
 // ── 商店 ────────────────────────────────────────────────────────
-const std::vector<ShopItem>& GameEngine::GetShopItemList() const {
+const std::vector<ShopItem>& GameEngine::GetShopItemList() {
     return m_shop.GetShopItems();
 }
 
@@ -688,7 +685,14 @@ bool GameEngine::MovePlayer(int dx, int dy) {
 // 【附近实体检测】主动交互前的轮询函数
 // 返回与玩家曼哈顿距离 ≤ radius 的全部实体；Qt 据此决定是否弹出交互按钮
 std::vector<InteractableInfo> GameEngine::CheckNearbyInteractables(int radius) const {
-    return m_worldMap.CheckNearbyInteractables(radius);
+    auto list = m_worldMap.CheckNearbyInteractables(radius);
+    if (!IsNight()) {
+        auto it = std::remove_if(list.begin(), list.end(), [](const InteractableInfo& info) {
+            return info.isNightOnly;
+        });
+        list.erase(it, list.end());
+    }
+    return list;
 }
 
 // 【交互执行】玩家主动点击确认后的核心入口
@@ -839,25 +843,10 @@ void GameEngine::_OnDayToNight() {
     // 重置并初始化黑市货架（每夜全新商品）
     m_blackMarket.InitItems();
 
-    // ── 在出生点附近随机位置生成 1~2 个黑市商人 ──────────────────
     m_blackMarketNpcIds.clear();
-    // 在地图中心区域随机选 2 个位置
-    static const int candidates[][2] = {
-        {22, 22}, {28, 22}, {22, 28}, {28, 28}, {25, 20}, {25, 30}
-    };
-    int count = 0;
-    for (auto& c : candidates) {
-        if (count >= 2) break;
-        int id = m_nextNightEntityId++;
-        m_worldMap.AddInteractable(
-            InteractableInfo::MakeBlackMarket(id, GamePoint(c[0], c[1]), "神秘黑市商人"));
-        m_blackMarketNpcIds.push_back(id);
-        ++count;
-    }
     m_blackMarketSpawned = true;
 
-    // ── 生成夜晚专属怪物 ──────────────────────────────────────────
-    _SpawnNightEnemies();
+    m_blackMarketSpawned = true;
 }
 
 // 夜晚 → 白天：从地图移除所有黑市商人
@@ -869,30 +858,4 @@ void GameEngine::_OnNightToDay() {
     m_blackMarketSpawned = false;
 }
 
-// 在地图固定点位生成夜晚专属怪物（不与白天怪物重叠）
-void GameEngine::_SpawnNightEnemies() {
-    // 夜晚怪物出没点位（偏离出生点的暗角）
-    struct NightSpawn {
-        int x, y;
-        bool isBoss;  // true = DormGuard; false = MidnightNerd
-    };
-    static const NightSpawn spawns[] = {
-        { 15, 15, true  },   // 宿管阿姨 - 西北角宿舍楼
-        { 35, 15, false },   // 午夜卷王 - 东北角图书馆
-        { 15, 35, false },   // 午夜卷王 - 西南角食堂
-        { 35, 35, true  },   // 宿管阿姨 - 东南角操场
-    };
-
-    for (const auto& s : spawns) {
-        int id = m_nextNightEntityId++;
-        std::string displayName = s.isBoss ? "宿管阿姨 ⚠️" : "午夜卷王幽灵 👻";
-        Enemy tpl = s.isBoss ? Enemy::DormGuard() : Enemy::MidnightNerd();
-        InteractableType eType = s.isBoss ? InteractableType::Boss : InteractableType::Enemy;
-
-        InteractableInfo info = InteractableInfo::MakeEnemy(
-            id, GamePoint(s.x, s.y), displayName, tpl);
-        info.type = eType;
-        m_worldMap.AddInteractable(std::move(info));
-        m_blackMarketNpcIds.push_back(id);  // 白天到来时一起移除
-    }
-}
+// (Removed _SpawnNightEnemies as night monsters are now placed via QtMapLoader and visibility is toggled)

@@ -221,6 +221,7 @@ static void parseObjectGroup(const QJsonObject& layerObj,
 
             InteractableInfo info = InteractableInfo::MakeEnemy(objId, pos, displayName, tpl);
             if (isBoss) info.type = InteractableType::Boss;
+            if (sprId == 204 || sprId == 107) info.isNightOnly = true;
             worldMap->AddInteractable(std::move(info));
 
             // 在地图上绘制怪物贴图

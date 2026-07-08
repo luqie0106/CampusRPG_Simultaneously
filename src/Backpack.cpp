@@ -102,7 +102,6 @@ std::string Backpack::UseItem(int index, Character& player) {
 
     // 使用后从背包移除
     items.erase(items.begin() + idx);
-    ss << "物品已从背包移除。\n";
     return ss.str();
 }
 

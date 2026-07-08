@@ -170,7 +170,7 @@ public:
 
     // ── 商店（供 Qt 商品列表使用）─────────────
     // 返回商店全部 ShopItem 的 const 引用
-    const std::vector<ShopItem>& GetShopItemList() const;
+    const std::vector<ShopItem>& GetShopItemList();
 
     // ── 战斗中敌人数据（仅 Battle 状态有效）──
     // 函数内部安全检查，非战斗状态返回 -1 / false / ""
@@ -265,7 +265,6 @@ private:
     std::string _SettleVictory();
 
     // 内部回调：时钟是否切换
-    void _OnDayToNight();  // 白天→夜晚：生成黑市 + 夜晚怪物
+    void _OnDayToNight();  // 白天→夜晚：处理黑市商人刷新等
     void _OnNightToDay();  // 夜晚→白天：清除地图上所有黑市商人
-    void _SpawnNightEnemies(); // 在地图随机空地生成夜晚怪物
 };

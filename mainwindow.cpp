@@ -96,6 +96,11 @@ MainWindow::MainWindow(QWidget *parent)
     equipmentWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     equipmentWidget->show();
 
+    m_gameTimeLabel = new QLabel(this);
+    m_gameTimeLabel->setStyleSheet("color: white; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 4px; font-weight: bold; font-size: 16px;");
+    m_gameTimeLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_gameTimeLabel->show();
+
     battleActions = {"[攻击]", "[使用物品]", "[逃跑]"};
 
     // ========== 初始化游戏引擎 ==========
@@ -212,6 +217,14 @@ MainWindow::MainWindow(QWidget *parent)
     moveTimer = new QTimer(this);
     connect(moveTimer, &QTimer::timeout, this, [=, this]()
             {
+                bool isNight = m_engine.IsNight();
+                for (auto it = interactableGraphics.constBegin(); it != interactableGraphics.constEnd(); ++it) {
+                    const auto* info = m_engine.GetWorldMap().GetInteractableById(it.key());
+                    if (info && info->isNightOnly) {
+                        it.value()->setVisible(isNight);
+                    }
+                }
+
                 int dx = 0;
                 int dy = 0;
                 // 检查按键中断自动寻路
@@ -337,6 +350,11 @@ MainWindow::MainWindow(QWidget *parent)
                 // 常驻 UI 跟随
                 playerHealthBar->move(view->width() / 2 - playerHealthBar->width() / 2, view->height() - 30);
                 equipmentWidget->move(10, view->height() - equipmentWidget->sizeHint().height() - 40);
+                if (m_gameTimeLabel) {
+                    m_gameTimeLabel->setText(QString::fromStdString(m_engine.GetGameTime().ToString()));
+                    m_gameTimeLabel->move(10, 10);
+                    m_gameTimeLabel->adjustSize();
+                }
 
                 // 更新统一交互 UI
                 if (m_shopWindow == nullptr) {
@@ -585,8 +603,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
             if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
                 if (m_shopWindow == nullptr) {
-                    m_shopWindow = new ShopWindow(&m_engine, this);
-                    m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
+                    bool isBlackMarket = m_engine.IsNight();
+                    m_shopWindow = new ShopWindow(&m_engine, isBlackMarket, this);
+                    if (isBlackMarket) {
+                        m_engine.ExecuteInteraction(InteractionType::EnterBlackMarket, info.id);
+                    } else {
+                        m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
+                    }
                     m_shopWindow->loadItemsFromEngine();
                     m_shopWindow->show();
                     connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
@@ -757,11 +780,25 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                        mapSys.isWalkable(brX, brY);
             };
 
-            auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
-            if (!path.empty()) {
-                autoPath = path;
-                currentPathIndex = 0;
-                bigMapView->hide(); // 寻路成功后关闭大地图
+            QMenu menu;
+            QAction* moveAction = menu.addAction("前往");
+            QAction* teleportAction = menu.addAction("传送");
+            
+            QAction* selectedAction = menu.exec(QCursor::pos());
+            
+            if (selectedAction == moveAction) {
+                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
+                if (!path.empty()) {
+                    autoPath = path;
+                    currentPathIndex = 0;
+                    bigMapView->hide(); // 寻路成功后关闭大地图
+                }
+            } else if (selectedAction == teleportAction) {
+                if (checkNodeValid(targetX, targetY)) {
+                    m_engine.GetWorldMap().SetPlayerPos(GamePoint(targetX, targetY));
+                    autoPath.clear();
+                    bigMapView->hide();
+                }
             }
             return true; // 拦截事件
         }

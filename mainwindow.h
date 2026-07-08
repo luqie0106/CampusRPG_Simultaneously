@@ -100,6 +100,8 @@ private:
     QLabel *equipLabels[5];
     void updateEquipmentUI();
 
+    QLabel *m_gameTimeLabel = nullptr;
+
 public slots:
     // 用于接收 BackpackWindow 传来的信号
     void onBattleItemUsed(const QString& resultLog);
