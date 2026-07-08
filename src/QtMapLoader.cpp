@@ -65,14 +65,19 @@ static void initEntitySpriteCache() {
     };
 
     // ── 怪物贴图注册 ────────────────────────────────────────────────
+    loadSpriteSheet(100, "character_16_frame32x32.png"); // 小树林霸主 ForestBoss
     loadSpriteSheet(101, "character_22_frame32x32.png"); // 校园混混 Bully
-<<<<<<< HEAD
     loadSpriteSheet(102, "character_1_frame32x32.png");  // 逃课大神 Skipper
+    loadSpriteSheet(103, "character_2_frame32x32.png");  // 考试黄牛 Cheater
+    loadSpriteSheet(104, "character_7_frame32x32.png");  // 小弟弟 GangMember
+    loadSpriteSheet(105, "character_11_frame32x32.png"); // 树林野犬 ForestMonster1
+    loadSpriteSheet(106, "character_14_frame32x32.png"); // 幽暗黑影 ForestMonster2
+    loadSpriteSheet(107, "character_6_frame32x32.png");  // 午夜卷王幽灵 MidnightNerd
+    loadSpriteSheet(201, "character_18_frame32x32.png"); // 教导主任 DeanOfStudents
+    loadSpriteSheet(202, "character_20_frame32x32.png"); // 体育委员长 PECommittee
+    loadSpriteSheet(203, "character_23_frame32x32.png"); // 校长 Principal
+    loadSpriteSheet(204, "character_5_frame32x32.png");  // 宿管阿姨 DormGuard
     // TODO: 后续补充其他怪物和NPC的贴图
-=======
-    // TODO: 后续补充其他怪物和NPC的贴图
-    // loadSpriteSheet(102, "character_XX_frame32x32.png"); // 逃课大神
->>>>>>> 5ea8253609a78bca2030c4eaf76b1a5c5f6bc925
     // ...
 }
 
