@@ -81,20 +81,24 @@ std::string Backpack::UseItem(int index, Character& player) {
             return ss.str();
         }
 
-    // ── Equipment：穿戴装备 ─────────────────────────────────────
+    // ── Equipment：穿戴装备（装备后物品保留在背包列表，按钮变为"脱下"）──
     } else if (Equipment* equip = dynamic_cast<Equipment*>(raw)) {
-        std::unique_ptr<Item> item = std::move(items[idx]);
-        std::shared_ptr<Equipment> equipPtr(dynamic_cast<Equipment*>(item.release()));
-        
+        // 复制一份给装备槽，原 items[idx] 保留在背包中以便界面显示
+        std::shared_ptr<Equipment> equipPtr(dynamic_cast<Equipment*>(
+            std::make_unique<Equipment>(*equip).release()));
+
         player.EquipItem(equipPtr);
 
-        ss << "装备了【" << equipPtr->getName() << "】\n";
-        int atkBonus = equipPtr->GetAttackBonus();
-        int defBonus = equipPtr->GetDefenseBonus();
+        ss << "装备了【" << equip->getName() << "】\n";
+        int atkBonus = equip->GetAttackBonus();
+        int defBonus = equip->GetDefenseBonus();
         if (atkBonus > 0) ss << "  攻击力 +" << atkBonus << " (来自装备)\n";
         if (defBonus > 0) ss << "  防御力 +" << defBonus << " (来自装备)\n";
         ss << "  当前属性 → 攻击力: " << player.GetAttack()
            << "  防御力: " << player.GetDefense() << "\n";
+
+        // 注意：不 erase，装备物品留在背包列表中，由 BackpackWindow 显示为"已装备"状态
+        return ss.str();
 
     } else {
         ss << "使用了【" << raw->getName() << "】，但没有产生特殊效果。\n";

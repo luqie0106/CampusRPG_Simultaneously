@@ -73,39 +73,35 @@ void Character::EquipItem(std::shared_ptr<Equipment> equip) {
     if (!equip) return;
     EquipSlot slot = equip->GetSlot();
 
-    // 辅助 lambda：如果该槽有旧装备，先归还到背包再覆盖
-    auto returnOldToBackpack = [&](std::shared_ptr<Equipment>& currentSlot) {
-        if (currentSlot) {
-            // shared_ptr<Equipment> → unique_ptr<Equipment>（拷贝构造克隆一份）
-            backpack.AddItem(std::make_unique<Equipment>(*currentSlot));
-        }
+    // 直接覆盖装备槽；旧装备和新装备都保留在背包 items 列表中，
+    // 不再向背包 AddItem（避免重复）
+    auto replaceSlot = [&](std::shared_ptr<Equipment>& currentSlot) {
         currentSlot = equip;
     };
 
     switch (slot) {
-        case EquipSlot::Head:   returnOldToBackpack(equippedHead);   break;
-        case EquipSlot::Body:   returnOldToBackpack(equippedBody);   break;
-        case EquipSlot::Legs:   returnOldToBackpack(equippedLegs);   break;
-        case EquipSlot::Feet:   returnOldToBackpack(equippedFeet);   break;
-        case EquipSlot::Weapon: returnOldToBackpack(equippedWeapon); break;
+        case EquipSlot::Head:   replaceSlot(equippedHead);   break;
+        case EquipSlot::Body:   replaceSlot(equippedBody);   break;
+        case EquipSlot::Legs:   replaceSlot(equippedLegs);   break;
+        case EquipSlot::Feet:   replaceSlot(equippedFeet);   break;
+        case EquipSlot::Weapon: replaceSlot(equippedWeapon); break;
         default: break;
     }
 }
 
+
 void Character::UnequipItem(EquipSlot slot) {
-    auto returnToBackpack = [&](std::shared_ptr<Equipment>& currentSlot) {
-        if (currentSlot) {
-            backpack.AddItem(std::make_unique<Equipment>(*currentSlot));
-            currentSlot = nullptr;
-        }
+    // 仅清除装备槽引用；物品本就保留在背包 items 列表中，不需要再次 AddItem
+    auto clearSlot = [](std::shared_ptr<Equipment>& currentSlot) {
+        currentSlot = nullptr;
     };
 
     switch (slot) {
-        case EquipSlot::Head:   returnToBackpack(equippedHead);   break;
-        case EquipSlot::Body:   returnToBackpack(equippedBody);   break;
-        case EquipSlot::Legs:   returnToBackpack(equippedLegs);   break;
-        case EquipSlot::Feet:   returnToBackpack(equippedFeet);   break;
-        case EquipSlot::Weapon: returnToBackpack(equippedWeapon); break;
+        case EquipSlot::Head:   clearSlot(equippedHead);   break;
+        case EquipSlot::Body:   clearSlot(equippedBody);   break;
+        case EquipSlot::Legs:   clearSlot(equippedLegs);   break;
+        case EquipSlot::Feet:   clearSlot(equippedFeet);   break;
+        case EquipSlot::Weapon: clearSlot(equippedWeapon); break;
         default: break;
     }
 }

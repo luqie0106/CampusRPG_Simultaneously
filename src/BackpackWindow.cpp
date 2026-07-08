@@ -69,17 +69,27 @@ void BackpackWindow::refreshBackpack() {
     // 获取背包物品
     const auto& backpackItems = m_engine->GetBackpackItems();
 
-    if (backpackItems.empty()) {
+    // 构建"已装备"槽位映射：装备名称 → 槽位（用于判断某物品是否已被装备）
+    EquipSlot eqSlots[] = { EquipSlot::Weapon, EquipSlot::Head, EquipSlot::Body, EquipSlot::Legs, EquipSlot::Feet };
+    QMap<QString, EquipSlot> equippedNameToSlot;
+    for (int i = 0; i < 5; ++i) {
+        auto eq = m_engine->GetPlayer()->GetEquipmentAt(eqSlots[i]);
+        if (eq) {
+            equippedNameToSlot[QString::fromStdString(eq->getName())] = eqSlots[i];
+        }
+    }
+
+    if (backpackItems.empty() && equippedNameToSlot.isEmpty()) {
         QLabel *empty = new QLabel("背包空空如也", m_scrollContent);
         empty->setStyleSheet("color: white; font-size: 16px;");
         m_scrollLayout->addWidget(empty);
         return;
     }
 
-    // 统计背包中每种物品的数量
+    // 统计背包中每种物品的数量，记录首次出现索引
     QMap<QString, int> itemCountMap;
-    QMap<QString, int> firstIndexMap; // 记录每种物品第一次出现的索引（1-based）
-    for (int i = 0; i < backpackItems.size(); ++i) {
+    QMap<QString, int> firstIndexMap;
+    for (int i = 0; i < (int)backpackItems.size(); ++i) {
         const auto& item = backpackItems[i];
         if (!item) continue;
         QString name = QString::fromStdString(item->getName());
@@ -104,8 +114,13 @@ void BackpackWindow::refreshBackpack() {
 
         QWidget *card = new QWidget(m_scrollContent);
         card->setFixedSize(150, 200);
-        card->setStyleSheet(
-            "QWidget { background-color: #3a3a3a; border-radius: 8px; border: 1px solid #555; }");
+        if (isEquipped) {
+            card->setStyleSheet(
+                "QWidget { background-color: #2a3a2a; border-radius: 8px; border: 2px solid #4CAF50; }");
+        } else {
+            card->setStyleSheet(
+                "QWidget { background-color: #3a3a3a; border-radius: 8px; border: 1px solid #555; }");
+        }
 
         QVBoxLayout *cardLayout = new QVBoxLayout(card);
         cardLayout->setContentsMargins(8, 8, 8, 8);
@@ -131,13 +146,13 @@ void BackpackWindow::refreshBackpack() {
         nameLabel->setFixedHeight(32);
         cardLayout->addWidget(nameLabel);
 
-        QLabel *countLabel = new QLabel(isEquipped ? "已装备" : QString("数量: %1").arg(count), card);
+        QLabel *countLabel = new QLabel(isEquipped ? "✓ 已装备" : QString("数量: %1").arg(count), card);
         countLabel->setStyleSheet(isEquipped ? "color: #4CAF50; font-size: 12px; font-weight: bold;" : "color: #aaa; font-size: 12px; font-weight: bold;");
         countLabel->setAlignment(Qt::AlignCenter);
         cardLayout->addWidget(countLabel);
 
         QHBoxLayout *btnRow = new QHBoxLayout();
-        QPushButton *useBtn = new QPushButton(isEquipped ? "卸下" : "使用", card);
+        QPushButton *useBtn = new QPushButton(isEquipped ? "脱下" : "使用", card);
         useBtn->setFixedSize(60, 24);
         useBtn->setEnabled(count > 0 || isEquipped);
         if (isEquipped) {
@@ -159,8 +174,8 @@ void BackpackWindow::refreshBackpack() {
             }
 
             if (isEquipped) {
+                // 脱下装备：只清除装备槽，物品仍留在背包 items
                 m_engine->GetPlayer()->UnequipItem(equipSlot);
-                QMessageBox::information(this, "卸下装备", "装备已卸下放入背包");
                 refreshBackpack();
             } else if (itemIndex > 0) {
                 std::string result;
@@ -213,22 +228,31 @@ void BackpackWindow::refreshBackpack() {
         grid->addWidget(card, row, col);
     };
 
-    // 显示身上已装备的物品
-    EquipSlot eqSlots[] = { EquipSlot::Weapon, EquipSlot::Head, EquipSlot::Body, EquipSlot::Legs, EquipSlot::Feet };
-    for (int i = 0; i < 5; ++i) {
-        auto eq = m_engine->GetPlayer()->GetEquipmentAt(eqSlots[i]);
-        if (eq) {
-            addCard(QString::fromStdString(eq->getName()), 1, 0, true, eqSlots[i]);
-        }
-    }
-
-    // 显示背包里的物品
+    // 遍历背包物品，已装备的同名物品标记为已装备状态（每种只标记一次）
+    QSet<QString> markedAsEquipped; // 已标记为已装备的物品名称集合
     for (auto it = firstIndexMap.constBegin(); it != firstIndexMap.constEnd(); ++it) {
         QString itemName = it.key();
         int count = itemCountMap.value(itemName, 0);
         int itemIndex = it.value();
 
-        addCard(itemName, count, itemIndex, false, EquipSlot::Head); // EquipSlot is ignored when !isEquipped
+        bool isEquipped = false;
+        EquipSlot equipSlot = EquipSlot::Head; // 默认值
+
+        // 检查是否已装备（且尚未被标记过）
+        if (equippedNameToSlot.contains(itemName) && !markedAsEquipped.contains(itemName)) {
+            isEquipped = true;
+            equipSlot = equippedNameToSlot[itemName];
+            markedAsEquipped.insert(itemName);
+            // 已装备的物品显示数量要减1（因为有一个是已装备的）
+            int displayCount = count - 1;
+            addCard(itemName, displayCount, itemIndex, true, equipSlot);
+            // 如果还有剩余数量（count > 1），再显示一个未装备的卡片
+            if (displayCount > 0) {
+                addCard(itemName, displayCount, itemIndex, false, EquipSlot::Head);
+            }
+        } else {
+            addCard(itemName, count, itemIndex, false, EquipSlot::Head);
+        }
     }
 
     m_scrollLayout->addLayout(grid);

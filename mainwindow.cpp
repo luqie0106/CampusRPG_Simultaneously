@@ -519,6 +519,37 @@ void MainWindow::updateInteractionUI() {
 // 按键按下触发
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+    // ═══════════════════════════════════════════════
+    // Ctrl+Q 退出确认（macOS/Windows/Linux 均兼容）
+    // macOS: Cmd+Q, Windows/Linux: Ctrl+Q
+    // Qt::ControlModifier 在 macOS 上自动映射为 Command 键
+    // ═══════════════════════════════════════════════
+    if ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_Q) {
+        QMessageBox confirmBox(this);
+        confirmBox.setWindowTitle("退出游戏");
+        confirmBox.setText("确认退出吗？");
+        confirmBox.setInformativeText("退出前将自动保存当前进度。");
+        confirmBox.setIcon(QMessageBox::Question);
+        QPushButton *confirmBtn = confirmBox.addButton("确认退出", QMessageBox::AcceptRole);
+        QPushButton *cancelBtn  = confirmBox.addButton("取消",     QMessageBox::RejectRole);
+        Q_UNUSED(cancelBtn);
+        confirmBox.setStyleSheet(
+            "QMessageBox { background-color: #2c2c2c; }"
+            "QMessageBox QLabel { color: white; font-size: 14px; }"
+            "QPushButton { background-color: #555; color: white; padding: 6px 16px;"
+            "              border-radius: 4px; font-size: 13px; }"
+            "QPushButton:hover { background-color: #777; }");
+        confirmBox.exec();
+        if (confirmBox.clickedButton() == confirmBtn) {
+            // 自动存档（无论当前状态）
+            if (m_engine.GetPlayer() != nullptr) {
+                m_engine.SaveGame();
+            }
+            QApplication::quit();
+        }
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape) {
         bool closedSomething = false;
         if (bigMapView && bigMapView->isVisible()) {
