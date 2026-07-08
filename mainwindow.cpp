@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     keyA = false;
     keyS = false;
     keyD = false;
+    keySpace = false;
     currentCharacter = 0;
     m_shopWindow = nullptr;
     m_backpackWindow = nullptr;
@@ -629,6 +630,11 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_backpackWindow->activateWindow();
         }
         break;
+    case Qt::Key_Space:
+        // 按住空格加速（仅探索/移动场景生效，战斗状态走上面的 Battle 分支）
+        keySpace = true;
+        moveSpeed = 10;
+        break;
     default:
         QMainWindow::keyPressEvent(event);
         break;
@@ -644,6 +650,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
     case Qt::Key_A: keyA = false; break;
     case Qt::Key_S: keyS = false; break;
     case Qt::Key_D: keyD = false; break;
+    case Qt::Key_Space:
+        keySpace = false;
+        moveSpeed = 5;
+        break;
     default:
         QMainWindow::keyReleaseEvent(event);
         break;

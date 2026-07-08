@@ -61,6 +61,7 @@ private:
     bool keyA;
     bool keyS;
     bool keyD;
+    bool keySpace;
     // 刷新移动定时器
     QTimer *moveTimer;
 
