@@ -133,7 +133,10 @@ private:
     void _showNextNotification();               // Timer 触发：弹出队列下一项并播放动画
     void _updateTrackedTaskHUD();               // 刷新常驻面板文字
     void _clearMapTrackMarkers();               // 清除大地图上的所有追踪标记
-    void _placeMapTrackMarkers(int taskId);     // 为指定任务绘制目标敌人标记
+    QGraphicsItem* _placeMapTrackMarkers(int taskId); // 为指定任务绘制目标敌人标记，返回生成的 marker（nullptr 表示无目标）
+
+    // ── 寻路碰撞检测辅助（提取自 eventFilter，避免代码重复）──────────────────────
+    bool isTileWalkable(int x, int y);
 
 public slots:
     // 用于接收 BackpackWindow 传来的信号

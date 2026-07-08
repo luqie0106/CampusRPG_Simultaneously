@@ -260,9 +260,37 @@ MainWindow::MainWindow(QWidget *parent)
     moveTimer = new QTimer(this);
     connect(moveTimer, &QTimer::timeout, this, [=, this]()
             {
+                // ── 监听：从战斗回到探索状态，自动开启大地图连续追踪 ─────────────
+                static GameState lastState = m_engine.GetState();
+                GameState currentState = m_engine.GetState();
+
+                if (lastState == GameState::Battle && currentState == GameState::InGame) {
+                    if (m_trackedTaskId >= 0) {
+                        const auto& tasks = m_engine.GetTaskManager().GetTasks();
+                        for (const auto& t : tasks) {
+                            if (t->id == m_trackedTaskId && t->status == TaskStatus::InProgress) {
+                                bool hasMoreMonsters = false;
+                                for (const auto& obj : t->objectives) {
+                                    if (obj.type == TaskType::KillEnemy && !obj.isComplete()) {
+                                        hasMoreMonsters = true;
+                                        break;
+                                    }
+                                }
+                                if (hasMoreMonsters) {
+                                    // 延时 500ms 自动打开大地图继续追踪下一个怪（给玩家喘息时间）
+                                    QTimer::singleShot(500, this, [this](){ openBigMap(); });
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                lastState = currentState;
+
                 // 1. 尝试复活满3小时的怪物
                 int currentMins = m_engine.GetGameTime().GetTotalMinutes();
                 m_engine.GetWorldMap().RespawnDeadMonsters(currentMins);
+
                 // 2. 刷新所有实体的显示状态（夜间隐藏、假死隐藏）
                 bool isNight = m_engine.IsNight();
                 for (auto it = interactableGraphics.constBegin(); it != interactableGraphics.constEnd(); ++it) {
@@ -828,6 +856,35 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
     }
 }
 
+// ── 寻路碰撞检测辅助：检查给定格子坐标 (x, y) 对应的碌撞筪是否全部覆盖在可行走区域上
+// 碰撞筪针对寻路用，偏移第4一乊宣导首字解释了操作系数含义
+bool MainWindow::isTileWalkable(int x, int y) {
+    qreal targetPx_x = x * 16.0 + 8.0;
+    qreal targetPx_y = y * 16.0 + 8.0;
+    qreal tx = targetPx_x - player->boundingRect().width() / 2.0;
+    qreal ty = targetPx_y - player->boundingRect().height();
+    qreal spriteW = player->boundingRect().width();
+    qreal spriteH = player->boundingRect().height();
+    qreal colOffsetX = spriteW * 6.0 / 32.0;
+    qreal colOffsetY = spriteH * 16.0 / 32.0;
+    qreal colWidth   = spriteW * 20.0 / 32.0;
+    qreal colHeight  = spriteH * 15.0 / 32.0;
+    qreal tileSize = 16.0;
+    int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+    int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+    int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+    int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
+    int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
+    int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+    int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
+    int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
+    auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
+    return mapSys.isWalkable(tlX, tlY) &&
+           mapSys.isWalkable(trX, trY) &&
+           mapSys.isWalkable(blX, blY) &&
+           mapSys.isWalkable(brX, brY);
+}
+
 // 事件过滤器，处理鼠标点击寻路
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
@@ -847,38 +904,10 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
             if (selectedAction == goAction) {
                 int startX = playerLogicalPos.x() / 16.0;
                 int startY = playerLogicalPos.y() / 16.0;
-                
-                auto checkNodeValid = [&](int x, int y) {
-                    qreal targetPx_x = x * 16.0 + 8.0;
-                    qreal targetPx_y = y * 16.0 + 8.0;
-                    qreal tx = targetPx_x - player->boundingRect().width() / 2.0;
-                    qreal ty = targetPx_y - player->boundingRect().height();
 
-                    qreal spriteW = player->boundingRect().width();
-                    qreal spriteH = player->boundingRect().height();
-                    qreal colOffsetX = spriteW * 6.0 / 32.0;
-                    qreal colOffsetY = spriteH * 16.0 / 32.0;
-                    qreal colWidth = spriteW * 20.0 / 32.0;
-                    qreal colHeight = spriteH * 15.0 / 32.0;
-
-                    qreal tileSize = 16.0;
-                    int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
-                    int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
-                    int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
-                    int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
-                    int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
-                    int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
-                    int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
-                    int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
-
-                    auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
-                    return mapSys.isWalkable(tlX, tlY) &&
-                           mapSys.isWalkable(trX, trY) &&
-                           mapSys.isWalkable(blX, blY) &&
-                           mapSys.isWalkable(brX, brY);
-                };
-
-                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
+                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(
+                    GamePoint(startX, startY), GamePoint(targetX, targetY),
+                    [this](int x, int y){ return isTileWalkable(x, y); });
                 if (!path.empty()) {
                     autoPath = path;
                     currentPathIndex = 0;
@@ -894,55 +923,27 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
             int startX = playerLogicalPos.x() / 16.0;
             int startY = playerLogicalPos.y() / 16.0;
-            
-            auto checkNodeValid = [&](int x, int y) {
-                qreal targetPx_x = x * 16.0 + 8.0;
-                qreal targetPx_y = y * 16.0 + 8.0;
-                qreal tx = targetPx_x - player->boundingRect().width() / 2.0;
-                qreal ty = targetPx_y - player->boundingRect().height();
-
-                qreal spriteW = player->boundingRect().width();
-                qreal spriteH = player->boundingRect().height();
-                qreal colOffsetX = spriteW * 6.0 / 32.0;
-                qreal colOffsetY = spriteH * 16.0 / 32.0;
-                qreal colWidth = spriteW * 20.0 / 32.0;
-                qreal colHeight = spriteH * 15.0 / 32.0;
-
-                qreal tileSize = 16.0;
-                int tlX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
-                int tlY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
-                int trX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
-                int trY = static_cast<int>(std::floor((ty + colOffsetY) / tileSize));
-                int blX = static_cast<int>(std::floor((tx + colOffsetX) / tileSize));
-                int blY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
-                int brX = static_cast<int>(std::floor((tx + colOffsetX + colWidth - 1) / tileSize));
-                int brY = static_cast<int>(std::floor((ty + colOffsetY + colHeight - 1) / tileSize));
-
-                auto& mapSys = m_engine.GetWorldMap().GetMapSystem();
-                return mapSys.isWalkable(tlX, tlY) &&
-                       mapSys.isWalkable(trX, trY) &&
-                       mapSys.isWalkable(blX, blY) &&
-                       mapSys.isWalkable(brX, brY);
-            };
 
             QMenu menu;
             QAction* moveAction = menu.addAction("前往");
             QAction* teleportAction = menu.addAction("传送");
-            
+
             QAction* selectedAction = menu.exec(QCursor::pos());
-            
+
             if (selectedAction == moveAction) {
-                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(GamePoint(startX, startY), GamePoint(targetX, targetY), checkNodeValid);
+                auto path = m_engine.GetWorldMap().GetMapSystem().findPath(
+                    GamePoint(startX, startY), GamePoint(targetX, targetY),
+                    [this](int x, int y){ return isTileWalkable(x, y); });
                 if (!path.empty()) {
                     autoPath = path;
                     currentPathIndex = 0;
                     bigMapView->hide(); // 寻路成功后关闭大地图
                 }
             } else if (selectedAction == teleportAction) {
-                if (checkNodeValid(targetX, targetY)) {
+                if (isTileWalkable(targetX, targetY)) {
                     m_engine.GetWorldMap().SetPlayerPos(GamePoint(targetX, targetY));
                     autoPath.clear();
-                    
+
                     // 同步 Qt 渲染层的像素坐标和移动逻辑坐标
                     QPointF newPx(targetX * 16.0, targetY * 16.0);
                     player->setPos(newPx);
@@ -1236,13 +1237,23 @@ void MainWindow::openBigMap() {
     bigMapView->setGeometry(view->geometry());
     bigMapView->show();
     bigMapView->raise();
-    bigMapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
 
-    // 若有追踪任务，在大地图上绘制目标标记
+    QGraphicsItem* marker = nullptr;
     if (m_trackedTaskId >= 0) {
-        _placeMapTrackMarkers(m_trackedTaskId);
+        marker = _placeMapTrackMarkers(m_trackedTaskId);
+    }
+
+    if (marker) {
+        // 有追踪目标：局部放大并聚焦到标记
+        bigMapView->resetTransform();
+        bigMapView->scale(1.8, 1.8);
+        bigMapView->centerOn(marker);
+    } else {
+        // 无目标：完整显示地图
+        bigMapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
     }
 }
+
 
 // ── 清除大地图上的所有追踪标记 ──────────────────────────────────────────────
 void MainWindow::_clearMapTrackMarkers() {
@@ -1253,17 +1264,18 @@ void MainWindow::_clearMapTrackMarkers() {
     m_trackMarkers.clear();
 }
 
-// ── 自定义可点击地图标记（局部类，定义在 mainwindow.cpp 内） ─────────────────
+// ── 自定义可点击地图标记（局部类，定义在 mainwindow.cpp 内） ─────────────
+#include <QGraphicsSceneEvent>
 namespace {
 
-// 可点击的追踪标记：继承 QGraphicsEllipseItem，点击后执行传送回调
+// 可点击的追踪标记：继承 QGraphicsEllipseItem，右键菜单选择前往/传送
 class TrackMarkerItem : public QGraphicsEllipseItem {
 public:
-    // callback: 点击时调用，参数为标记对应的瓦片坐标 (tileX, tileY)
-    using ClickCallback = std::function<void(int, int)>;
+    // choice: 0=前往(寻路), 1=传送
+    using ClickCallback = std::function<void(int choice)>;
 
     TrackMarkerItem(int tileX, int tileY, ClickCallback cb, QGraphicsItem* parent = nullptr)
-        : QGraphicsEllipseItem(tileX * 16.0 - 8, tileY * 16.0 - 8, 32, 32, parent),
+        : QGraphicsEllipseItem(tileX * 16.0 - 16, tileY * 16.0 - 16, 48, 48, parent),
           m_tileX(tileX), m_tileY(tileY), m_callback(std::move(cb))
     {
         setAcceptHoverEvents(true);
@@ -1277,15 +1289,20 @@ public:
         label->setBrush(Qt::white);
         QFont f;
         f.setBold(true);
-        f.setPixelSize(14);
+        f.setPixelSize(18);
         label->setFont(f);
         // 将文字居中于椭圆
-        label->setPos(tileX * 16.0 - 8 + 10, tileY * 16.0 - 8 + 6);
+        label->setPos(tileX * 16.0 - 16 + 14, tileY * 16.0 - 16 + 8);
     }
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent*) override {
-        if (m_callback) m_callback(m_tileX, m_tileY);
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override {
+        QMenu menu;
+        QAction* moveAct = menu.addAction(QString::fromUtf8("\u524d\u5f80 (\u5bfb\u8def)"));
+        QAction* tpAct   = menu.addAction(QString::fromUtf8("\u4f20\u9001"));
+        QAction* selected = menu.exec(QCursor::pos());
+        if (selected == moveAct) { if (m_callback) m_callback(0); }
+        else if (selected == tpAct) { if (m_callback) m_callback(1); }
     }
 
     // 悬停高亮效果
@@ -1305,8 +1322,9 @@ private:
 
 } // anonymous namespace
 
-// ── 为指定任务的未完成 KillEnemy 目标在大地图上绘制红色标记 ─────────────────
-void MainWindow::_placeMapTrackMarkers(int taskId) {
+
+// ── 为指定任务在大地图上绘制距玩家最近的单个目标标记 ─────────────────────────
+QGraphicsItem* MainWindow::_placeMapTrackMarkers(int taskId) {
     _clearMapTrackMarkers();
 
     const auto& tasks = m_engine.GetTaskManager().GetTasks();
@@ -1314,51 +1332,95 @@ void MainWindow::_placeMapTrackMarkers(int taskId) {
     for (const auto& t : tasks) {
         if (t->id == taskId) { targetTask = t.get(); break; }
     }
-    if (!targetTask) return;
+    if (!targetTask) return nullptr;
 
-    // 收集尚未完成的 KillEnemy 目标名称集合
-    std::set<std::string> pendingTargets;
+    // 严格按前后顺序找第一个未完成的目标（KillEnemy 优先，BuyXxx 作为商店追踪）
+    std::string pendingTargetName;
+    bool isShopTask = false;
     for (const auto& obj : targetTask->objectives) {
-        if (obj.type == TaskType::KillEnemy && !obj.isComplete()) {
-            pendingTargets.insert(obj.targetName);
+        if (!obj.isComplete()) {
+            if (obj.type == TaskType::KillEnemy) {
+                pendingTargetName = obj.targetName;
+                break; // 只追踪第一个未完成的杀怪目标
+            } else if (obj.type == TaskType::BuyItem ||
+                       obj.type == TaskType::BuyHealItem ||
+                       obj.type == TaskType::AnyBuy) {
+                isShopTask = true;
+                break; // 商店任务：找最近商店
+            }
         }
     }
-    if (pendingTargets.empty()) return;
+    if (pendingTargetName.empty() && !isShopTask) return nullptr;
 
-    // 遍历地图上所有实体，找到匹配的怪物
+    // 遍历地图上所有实体（大半径覆盖全图），过滤假死实体，按 Manhattan 距离选最近
     const auto& allEntities = m_engine.GetWorldMap().CheckNearbyInteractables(99999);
-    // CheckNearbyInteractables 以玩家为中心，但我们需要所有实体，
-    // 改用直接访问 WorldMap 的 GetInteractableById 不够方便；
-    // 此处利用大半径（99999 格）覆盖整张地图来获取全部实体。
+
+    int playerTileX = static_cast<int>(playerLogicalPos.x() / 16.0);
+    int playerTileY = static_cast<int>(playerLogicalPos.y() / 16.0);
+
+    const InteractableInfo* bestEntity = nullptr;
+    int bestDist = INT_MAX;
 
     for (const auto& info : allEntities) {
-        if (info.type != InteractableType::Enemy && info.type != InteractableType::Boss) continue;
-        if (pendingTargets.find(info.displayName) == pendingTargets.end()) continue;
+        if (info.isDead) continue; // 跳过假死实体
 
-        int tileX = static_cast<int>(info.pos.x);
-        int tileY = static_cast<int>(info.pos.y);
+        if (!isShopTask) {
+            // KillEnemy：匹配敌人名称
+            if (info.type != InteractableType::Enemy && info.type != InteractableType::Boss) continue;
+            if (info.displayName != pendingTargetName) continue;
+        } else {
+            // 商店任务：匹配商店/黑市
+            if (info.type != InteractableType::Shop && info.type != InteractableType::BlackMarket) continue;
+        }
 
-        // 传送回调：点击标记后将玩家移动到标记格附近并关闭大地图
-        auto callback = [this, tileX, tileY](int /*tx*/, int /*ty*/) {
-            // 传送到怪物正上方一格（避免与怪物重叠）
-            int destX = tileX;
-            int destY = std::max(0, tileY - 1);
+        int dist = std::abs(static_cast<int>(info.pos.x) - playerTileX) +
+                   std::abs(static_cast<int>(info.pos.y) - playerTileY);
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestEntity = &info;
+        }
+    }
 
+    if (!bestEntity) return nullptr;
+
+    int tileX = static_cast<int>(bestEntity->pos.x);
+    int tileY = static_cast<int>(bestEntity->pos.y);
+
+    // choice: 0=前往(寻路), 1=传送
+    auto callback = [this, tileX, tileY](int choice) {
+        int destX = tileX;
+        int destY = std::max(0, tileY - 1); // 目标正上方一格，避免与实体重叠
+
+        if (choice == 1) {
+            // 传送：直接移动玩家坐标
             m_engine.GetWorldMap().SetPlayerPos(GamePoint(destX, destY));
-            // 同步像素坐标
+            autoPath.clear();
             QPointF newPx(destX * 16.0, destY * 16.0);
             player->setPos(newPx);
             playerLogicalPos = QPointF(
                 newPx.x() + player->boundingRect().width()  / 2.0,
                 newPx.y() + player->boundingRect().height());
             view->centerOn(player);
+        } else {
+            // 前往：A* 寻路
+            int startX = static_cast<int>(playerLogicalPos.x() / 16.0);
+            int startY = static_cast<int>(playerLogicalPos.y() / 16.0);
+            auto path = m_engine.GetWorldMap().GetMapSystem().findPath(
+                GamePoint(startX, startY), GamePoint(destX, destY),
+                [this](int x, int y){ return isTileWalkable(x, y); });
+            if (!path.empty()) {
+                autoPath = path;
+                currentPathIndex = 0;
+            }
+        }
 
-            bigMapView->hide();
-            _clearMapTrackMarkers();
-        };
+        bigMapView->hide();
+        _clearMapTrackMarkers();
+    };
 
-        auto* marker = new TrackMarkerItem(tileX, tileY, callback);
-        mapScene->addItem(marker);
-        m_trackMarkers.append(marker);
-    }
+    auto* marker = new TrackMarkerItem(tileX, tileY, callback);
+    mapScene->addItem(marker);
+    m_trackMarkers.append(marker);
+    return marker; // 返回生成的标记，供 openBigMap 聚焦
 }
+

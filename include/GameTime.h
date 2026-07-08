@@ -16,6 +16,11 @@ struct GameTime {
     int Hour   = 8;   // 小时（0–23）
     int Minute = 0;   // 分钟（0–59）
 
+    // 返回总游戏分钟数（从第1天0:00起计）
+    int GetTotalMinutes() const {
+        return (Day - 1) * 24 * 60 + Hour * 60 + Minute;
+    }
+
     // 返回是否处于夜晚时段（22:00 ≤ time 或 time < 06:00）
     bool IsNight() const {
         return Hour >= 22 || Hour < 6;
