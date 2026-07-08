@@ -276,14 +276,13 @@ MainWindow::MainWindow(QWidget *parent)
                 if(nextY + playerSize.height() > mapRange.bottom()) nextY = mapRange.bottom() - playerSize.height();
 
                 // 2. 定义角色碰撞箱 (相对于人物左上角偏移和大小)
-                // 取人物偏下方的区域，避免头碰到墙壁就卡住
-                // 按精灵图尺寸缩放，适配不同角色
+                // 取人物偏下方的区域，缩小宽度以通过1格(16px)宽的通道
                 qreal spriteW = playerSize.width();
                 qreal spriteH = playerSize.height();
-                qreal colOffsetX = spriteW * 6.0 / 32.0;
-                qreal colOffsetY = spriteH * 16.0 / 32.0;
-                qreal colWidth = spriteW * 20.0 / 32.0;
-                qreal colHeight = spriteH * 15.0 / 32.0;
+                qreal colOffsetX = spriteW * 10.0 / 32.0;
+                qreal colOffsetY = spriteH * 20.0 / 32.0;
+                qreal colWidth = spriteW * 12.0 / 32.0;
+                qreal colHeight = spriteH * 10.0 / 32.0;
 
                 // 辅助函数：检查指定坐标的碰撞箱是否全部覆盖在Walkable格子上
                 auto checkWalkable = [&](qreal tx, qreal ty) {
@@ -307,11 +306,14 @@ MainWindow::MainWindow(QWidget *parent)
                 // 3. 滑动碰撞逻辑：分别验证 X 轴和 Y 轴
                 qreal finalX = player->x();
                 qreal finalY = player->y();
+                
+                // 脱困机制：如果当前坐标已经卡在不可行走的区域，则暂时允许移动直到脱困
+                bool currentlyStuck = !checkWalkable(player->x(), player->y());
 
-                if (nextX != player->x() && checkWalkable(nextX, player->y())) {
+                if (nextX != player->x() && (currentlyStuck || checkWalkable(nextX, player->y()))) {
                     finalX = nextX;
                 }
-                if (nextY != player->y() && checkWalkable(finalX, nextY)) {
+                if (nextY != player->y() && (currentlyStuck || checkWalkable(finalX, nextY))) {
                     finalY = nextY;
                 }
 
