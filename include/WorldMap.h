@@ -60,6 +60,9 @@ struct InteractableInfo {
 
     bool isNightOnly = false; // 是否只在夜间出现
 
+    bool isDead = false;             // 是否处于假死（待刷新）状态
+    int  deadTimeMinutes = 0;        // 死亡时的游戏时间（分钟）
+
     // ── 便捷工厂方法 ─────────────────────────────────────────────────
     // 怪物/Boss 点位：传入 Enemy 工厂生成的实例作为模板
     static InteractableInfo MakeEnemy(int id, GamePoint pos,
@@ -148,6 +151,11 @@ public:
 
     // 战斗胜利 / 实体失效后移除（由 GameEngine 在 ExecuteInteraction 内调用）
     void RemoveInteractable(int id);
+
+    // 将指定实体标记为假死
+    void MarkInteractableDead(int id, int currentMinutes);
+    // 检查所有假死怪物，如果死亡时间满 3 小时则复活
+    void RespawnDeadMonsters(int currentMinutes);
 
     // ── 玩家移动（含碰撞检测）────────────────────────────────────────
     // dx / dy 取值 -1、0、+1；仅四方向移动

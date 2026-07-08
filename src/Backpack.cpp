@@ -100,6 +100,20 @@ std::string Backpack::UseItem(int index, Character& player) {
         // 注意：不 erase，装备物品留在背包列表中，由 BackpackWindow 显示为"已装备"状态
         return ss.str();
 
+    } else if (StatBoostItem* boost = dynamic_cast<StatBoostItem*>(raw)) {
+        player.AddAttack(boost->GetAtkBoost());
+        player.AddDefense(boost->GetDefBoost());
+        
+        ss << "使用了【" << boost->getName() << "】\n";
+        if (boost->GetAtkBoost() > 0) ss << "  永久攻击力 +" << boost->GetAtkBoost() << "\n";
+        if (boost->GetDefBoost() > 0) ss << "  永久防御力 +" << boost->GetDefBoost() << "\n";
+        ss << "  当前属性 → 攻击力: " << player.GetAttack()
+           << "  防御力: " << player.GetDefense() << "\n";
+
+    } else if (CouponItem* coupon = dynamic_cast<CouponItem*>(raw)) {
+        ss << "【" << coupon->getName() << "】是一个被动特权凭证，只需要放在背包中即可生效，无需使用。\n";
+        return ss.str(); // Don't remove it from backpack
+
     } else {
         ss << "使用了【" << raw->getName() << "】，但没有产生特殊效果。\n";
     }

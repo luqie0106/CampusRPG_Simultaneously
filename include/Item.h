@@ -138,9 +138,35 @@ class AchievementItem : public Item {
         std::stringstream Show() const override;
         std::unique_ptr<Item> Clone() const override;
 
-        // ── Boss 成就掉落物工厂 ──────────────────────────────────────
         static std::shared_ptr<AchievementItem> ConfiscatedPhone(); // 被没收的手机 (教导主任)
         static std::shared_ptr<AchievementItem> Whistle();          // 破旧的哨子 (体育委员长)
         static std::shared_ptr<AchievementItem> Diploma();          // 绝版毕业证 (校长)
         static std::shared_ptr<AchievementItem> MasterKey();        // 宿舍万能钥匙 (宿管阿姨)
+};
+
+class StatBoostItem : public Item {
+    private:
+        int atkBoost;
+        int defBoost;
+    public:
+        StatBoostItem(std::string name, int value, int atkBoost, int defBoost);
+        ~StatBoostItem() = default;
+        int GetAtkBoost() const;
+        int GetDefBoost() const;
+        std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
+
+        static std::shared_ptr<StatBoostItem> StrengthPotion();
+        static std::shared_ptr<StatBoostItem> DefensePotion();
+        static std::shared_ptr<StatBoostItem> AllStatPotion();
+};
+
+class CouponItem : public Item {
+    public:
+        CouponItem(std::string name, int value);
+        ~CouponItem() = default;
+        std::stringstream Show() const override;
+        std::unique_ptr<Item> Clone() const override;
+
+        static std::shared_ptr<CouponItem> ShopDiscountCoupon();
 };

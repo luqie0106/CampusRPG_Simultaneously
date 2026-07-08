@@ -256,3 +256,52 @@ std::shared_ptr<AchievementItem> AchievementItem::Diploma() {
 std::shared_ptr<AchievementItem> AchievementItem::MasterKey() {
     return std::make_shared<AchievementItem>("宿舍万能钥匙", 300);
 }
+
+// ========== StatBoostItem 实现与工厂 ==========
+StatBoostItem::StatBoostItem(std::string name, int value, int atkBoost, int defBoost)
+    : Item(name, value), atkBoost(atkBoost), defBoost(defBoost) {}
+
+int StatBoostItem::GetAtkBoost() const { return atkBoost; }
+int StatBoostItem::GetDefBoost() const { return defBoost; }
+
+std::stringstream StatBoostItem::Show() const {
+    std::stringstream ss;
+    ss << "【属性增幅】" << getName() << " | 永久增加: ";
+    if (atkBoost > 0) ss << "攻击力+" << atkBoost << " ";
+    if (defBoost > 0) ss << "防御力+" << defBoost << " ";
+    return ss;
+}
+
+std::unique_ptr<Item> StatBoostItem::Clone() const {
+    return std::make_unique<StatBoostItem>(*this);
+}
+
+std::shared_ptr<StatBoostItem> StatBoostItem::StrengthPotion() {
+    return std::make_shared<StatBoostItem>("力量药水", 100, 2, 0);
+}
+
+std::shared_ptr<StatBoostItem> StatBoostItem::DefensePotion() {
+    return std::make_shared<StatBoostItem>("铁壁药水", 100, 0, 2);
+}
+
+std::shared_ptr<StatBoostItem> StatBoostItem::AllStatPotion() {
+    return std::make_shared<StatBoostItem>("全属性增幅药水", 300, 3, 3);
+}
+
+// ========== CouponItem 实现与工厂 ==========
+CouponItem::CouponItem(std::string name, int value)
+    : Item(name, value) {}
+
+std::stringstream CouponItem::Show() const {
+    std::stringstream ss;
+    ss << "【特权凭证】" << getName() << " | 效果: 放在背包中即可享受商店8折优惠！";
+    return ss;
+}
+
+std::unique_ptr<Item> CouponItem::Clone() const {
+    return std::make_unique<CouponItem>(*this);
+}
+
+std::shared_ptr<CouponItem> CouponItem::ShopDiscountCoupon() {
+    return std::make_shared<CouponItem>("商店折扣券", 0);
+}

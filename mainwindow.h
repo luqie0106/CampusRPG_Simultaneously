@@ -2,15 +2,19 @@
 
 #include "Common.h"
 #include "GameEngine.h"
+#include <queue>
 
 class ShopWindow;
 class BackpackWindow;
+class TaskWindow;
 class CharacterSelectDialog;
 class QLabel;
 class QGraphicsView;
 class QGraphicsScene;
 class QProgressBar;
 class QVBoxLayout;
+class QTimer;
+class QGraphicsItem;
 
 namespace Ui {
 class MainWindow;
@@ -23,6 +27,16 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    // ── 任务 HUD 公开接口 ──────────────────────────────────────────
+    // 将一条新任务通知推入队列，窗口将依次淡入淡出显示
+    void enqueueTaskNotification(const QString& text);
+
+    // 设置当前追踪任务（-1 表示取消追踪），立即刷新常驻面板
+    void setTrackedTask(int taskId);
+
+    // 打开大地图（等效 M 键），并在追踪任务目标位置绘制红色标记
+    void openBigMap();
 
 protected:
     // 键盘按下事件声明
@@ -83,6 +97,9 @@ private:
 
     // 背包交互
     BackpackWindow *m_backpackWindow;
+    
+    // 任务系统交互
+    TaskWindow *m_taskWindow;
 
     // 角色选择
     CharacterSelectDialog *m_charSelectDialog;
@@ -102,8 +119,27 @@ private:
 
     QLabel *m_gameTimeLabel = nullptr;
 
+    // ========== 任务 HUD ==========
+    QLabel  *m_newTaskNotifyLabel = nullptr;  // 新任务提示（淡入淡出轮播）
+    QLabel  *m_trackedTaskLabel   = nullptr;  // 常驻追踪面板
+    QTimer  *m_notifyTimer        = nullptr;  // 提示轮播定时器（2.5s/条）
+    std::queue<QString> m_notifyQueue;        // 待显示的提示文字队列
+    int      m_trackedTaskId      = -1;       // 当前追踪任务 ID（-1=无）
+
+    // 大地图追踪标记（红色圆圈），需在清除/重建时管理生命周期
+    QList<QGraphicsItem*> m_trackMarkers;
+
+    // 内部辅助
+    void _showNextNotification();               // Timer 触发：弹出队列下一项并播放动画
+    void _updateTrackedTaskHUD();               // 刷新常驻面板文字
+    void _clearMapTrackMarkers();               // 清除大地图上的所有追踪标记
+    void _placeMapTrackMarkers(int taskId);     // 为指定任务绘制目标敌人标记
+
 public slots:
     // 用于接收 BackpackWindow 传来的信号
     void onBattleItemUsed(const QString& resultLog);
-};
 
+private slots:
+    // 包装 _showNextNotification() 供 Timer::timeout 连接（避免 overload 歧义）
+    void _showNextNotification_slot();
+};

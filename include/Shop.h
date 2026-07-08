@@ -20,7 +20,7 @@ public:
     void InitShopItems();
 
     // 展示商店界面
-    std::stringstream DisplayShop();
+    std::stringstream DisplayShop(std::shared_ptr<Character> player);
 
     // 返回商店内全部商品的只读引用（供 Qt 不解析字符串直接渲染列表）
     const std::vector<ShopItem>& GetShopItems();

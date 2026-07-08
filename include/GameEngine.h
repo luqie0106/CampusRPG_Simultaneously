@@ -6,6 +6,7 @@
 #include "BlackMarket.h"
 #include "GameClock.h"
 #include "WorldMap.h"
+#include "Task.h"
 
 // ─────────────────────────────────────────────
 // 游戏阶段枚举
@@ -33,6 +34,10 @@ public:
 
     // 查询当前游戏阶段，UI 据此切换界面
     GameState GetState() const;
+
+    const Shop& GetShop() const { return m_shop; }
+    TaskManager& GetTaskManager() { return m_taskManager; }
+    const TaskManager& GetTaskManager() const { return m_taskManager; }
 
     // 查询当前玩家（可能为 nullptr）
     std::shared_ptr<Character> GetPlayer() const;
@@ -240,6 +245,7 @@ private:
     std::shared_ptr<Character>  m_player;
     Shop                        m_shop;
     BlackMarket                 m_blackMarket;        // 黑市实例
+    TaskManager                 m_taskManager;
     GameClock                   m_clock;              // 游戏内时钟（后台线程）
 
     // ── 黑市管理 ───────────────────────────────────

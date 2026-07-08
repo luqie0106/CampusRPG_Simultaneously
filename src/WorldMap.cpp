@@ -141,6 +141,30 @@ void WorldMap::RemoveInteractable(int id) {
         m_interactables.end());
 }
 
+void WorldMap::MarkInteractableDead(int id, int currentMinutes) {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
+    for (auto& e : m_interactables) {
+        if (e.id == id) {
+            e.isDead = true;
+            e.deadTimeMinutes = currentMinutes;
+            break;
+        }
+    }
+}
+
+void WorldMap::RespawnDeadMonsters(int currentMinutes) {
+    std::lock_guard<std::mutex> lock(m_mapMutex);
+    for (auto& e : m_interactables) {
+        // 只有怪物和 Boss 才会重生
+        if (e.isDead && (e.type == InteractableType::Enemy || e.type == InteractableType::Boss)) {
+            // 3个游戏小时 = 180 分钟
+            if (currentMinutes - e.deadTimeMinutes >= 180) {
+                e.isDead = false;
+            }
+        }
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 玩家移动（含碰撞检测）
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,6 +231,7 @@ std::vector<InteractableInfo> WorldMap::CheckNearbyInteractables(int radius) con
     int py = m_playerPos.y;
 
     for (const auto& entity : m_interactables) {
+        if (entity.isDead) continue; // 过滤假死状态的实体
         int dist = std::abs(entity.pos.x - px) + std::abs(entity.pos.y - py);
         if (dist <= radius) {
             result.push_back(entity);

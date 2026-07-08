@@ -84,19 +84,34 @@ const std::vector<ShopItem>& Shop::GetShopItems() {
     return m_shopItems;
 }
 
-std::stringstream Shop::DisplayShop() {
+std::stringstream Shop::DisplayShop(std::shared_ptr<Character> player) {
     std::stringstream ss;
     ss << "\n=== 校园小卖部 ===" << '\n';
     if (m_shopItems.empty()) {
         ss << "商店里暂时没有物品。" << '\n';
         return ss;
     }
+
+    bool hasDiscount = false;
+    if (player) {
+        for (const auto& item : player->GetBackpack().GetItems()) {
+            if (item->getName() == "商店折扣券") {
+                hasDiscount = true;
+                break;
+            }
+        }
+    }
     
     RefreshShop();
     for (size_t i = 0; i < m_shopItems.size(); ++i) {
+        int price = m_shopItems[i].item->getValue();
+        if (hasDiscount) {
+            price = std::max(1, static_cast<int>(price * 0.8));
+        }
         ss << i + 1 << ". " << m_shopItems[i].item->getName() 
-           << " - 价格: " << m_shopItems[i].item->getValue() << " 金币 "
-           << "(库存: " << m_shopItems[i].stock << "/" << m_shopItems[i].maxStock << ")\n"
+           << " - 价格: " << price << " 金币";
+        if (hasDiscount) ss << " (已享受8折优惠) ";
+        ss << " (库存: " << m_shopItems[i].stock << "/" << m_shopItems[i].maxStock << ")\n"
            << "   详情: " << m_shopItems[i].item->Show().str() << "\n";
     }
     ss << "0. 离开商店" << '\n';
@@ -116,16 +131,36 @@ std::stringstream Shop::BuyItem(std::shared_ptr<Character> player, int itemIndex
         throw GameException(shopItem.item->getName() + " 已经售罄！");
     }
 
-    if (player->GetGold() < shopItem.item->getValue()) {
+    int price = shopItem.item->getValue();
+    
+    // 检查背包是否有折扣券
+    bool hasDiscount = false;
+    for (const auto& item : player->GetBackpack().GetItems()) {
+        if (item->getName() == "商店折扣券") {
+            hasDiscount = true;
+            break;
+        }
+    }
+    
+    if (hasDiscount) {
+        price = std::max(1, static_cast<int>(price * 0.8)); // 8折
+    }
+
+    if (player->GetGold() < price) {
         throw NoEnoughGoldException("金币不足，购买失败。");
     }
 
-    player->SpendGold(shopItem.item->getValue());
+    player->SpendGold(price);
         
-        std::unique_ptr<Item> newItem = shopItem.item->Clone();
-        
-        player->GetBackpack().AddItem(std::move(newItem));
-        shopItem.stock--;
-        ss << "购买 " << shopItem.item->getName() << " 成功！" << '\n';
-        return ss;
+    std::unique_ptr<Item> newItem = shopItem.item->Clone();
+    
+    player->GetBackpack().AddItem(std::move(newItem));
+    bool isHealItem = (dynamic_cast<Medicine*>(shopItem.item.get()) != nullptr) || (dynamic_cast<Food*>(shopItem.item.get()) != nullptr);
+    if (m_engine) m_engine->GetTaskManager().OnItemBought(shopItem.item->getName(), isHealItem);
+    shopItem.stock--;
+    ss << "购买 " << shopItem.item->getName() << " 成功！" << '\n';
+    if (hasDiscount) {
+        ss << "（已应用折扣券，原价 " << shopItem.item->getValue() << "，折后价 " << price << "）\n";
+    }
+    return ss;
 }

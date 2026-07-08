@@ -25,6 +25,7 @@ std::string GameEngine::Init() {
     RNG::Init(); // 程序启动时初始化全局 mt19937 种子
 
     m_shop.SetEngine(this);
+    m_taskManager.InitTasks();
 
     // ── 启动游戏内时钟并注册昼夜回调 ────────────────────
     m_clock.SetOnDayToNight([this]() { _OnDayToNight(); });
@@ -240,7 +241,7 @@ std::string GameEngine::EnterShop() {
         return "🌙 夜深了，小卖部大门紧闭……神秘黑市也许在地图某处游荡！\n";
     }
     m_state = GameState::Shop;
-    return m_shop.DisplayShop().str();
+    return m_shop.DisplayShop(m_player).str();
 }
 
 std::string GameEngine::BuyItem(int itemIndex) {
@@ -714,12 +715,30 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
         case InteractionType::StartBattle: {
             // 必须有绑定的敌人模板
             if (!info->enemyTemplate.has_value()) {
+                // 智能兜底：如果实体名字匹配上了特定 Boss，强行注入模板并开战
+                if (info->displayName == "校长") {
+                    Enemy boss = Enemy::Principal();
+                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    return StartBattle(boss);
+                } else if (info->displayName == "教导主任") {
+                    Enemy boss = Enemy::DeanOfStudents();
+                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    return StartBattle(boss);
+                } else if (info->displayName == "体育委员长") {
+                    Enemy boss = Enemy::PECommittee();
+                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    return StartBattle(boss);
+                } else if (info->displayName == "宿管阿姨") {
+                    Enemy boss = Enemy::DormGuard();
+                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    return StartBattle(boss);
+                }
                 return "错误：该实体未绑定敌人模板，无法开始战斗。\n";
             }
             // 战斗一旦触发，将实体从地图移除（战斗结束前不再显示为可交互）
             // 若战斗胜利则永久移除；若逃跑则已消失（简化设计，可后续扩展为"重置"）
             Enemy enemyCopy = info->enemyTemplate.value();
-            m_worldMap.RemoveInteractable(targetId);
+            m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
             return StartBattle(enemyCopy);
         }
 
@@ -736,9 +755,7 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
         }
 
         case InteractionType::TalkToNPC: {
-            // TODO: 任务系统待设计，暂返回占位文本
-            // 后续接入 Task 系统后在此处驱动对话/任务逻辑
-            return "【" + info->displayName + "】：「同学，好久不见！」\n（任务系统开发中…）\n";
+            return m_taskManager.GetNPCInteractionText(info->displayName, m_player.get());
         }
 
         case InteractionType::PickUpItem: {

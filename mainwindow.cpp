@@ -5,7 +5,15 @@
 #include "QtMapLoader.h"
 #include "ShopWindow.h"
 #include "BackpackWindow.h"
+#include "include/TaskWindow.h"
 #include "CharacterSelectDialog.h"
+#include <QPropertyAnimation>
+#include <QGraphicsOpacityEffect>
+#include <QGraphicsEllipseItem>
+#include <QPainter>
+#include <QSequentialAnimationGroup>
+#include <QPauseAnimation>
+#include <set>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     currentCharacter = 0;
     m_shopWindow = nullptr;
     m_backpackWindow = nullptr;
+    m_taskWindow = nullptr;
     currentPathIndex = 0;
     selectedInteractionIndex = 0;
 
@@ -100,6 +109,40 @@ MainWindow::MainWindow(QWidget *parent)
     m_gameTimeLabel->setStyleSheet("color: white; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 4px; font-weight: bold; font-size: 16px;");
     m_gameTimeLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_gameTimeLabel->show();
+
+    // ========== 任务 HUD 初始化 ==========
+    // 新任务提示标签（淡入淡出轮播）
+    m_newTaskNotifyLabel = new QLabel(this);
+    m_newTaskNotifyLabel->setStyleSheet(
+        "color: #ffd700;"
+        "background-color: rgba(0, 0, 0, 180);"
+        "padding: 6px 14px;"
+        "border-radius: 6px;"
+        "font-size: 15px;"
+        "font-weight: bold;"
+        "font-family: 'Microsoft YaHei';"
+        "border: 1px solid rgba(255,215,0,120);");
+    m_newTaskNotifyLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_newTaskNotifyLabel->hide();
+
+    // 常驻追踪面板
+    m_trackedTaskLabel = new QLabel(this);
+    m_trackedTaskLabel->setStyleSheet(
+        "color: #a0d8ef;"
+        "background-color: rgba(0, 0, 0, 160);"
+        "padding: 6px 14px;"
+        "border-radius: 6px;"
+        "font-size: 13px;"
+        "font-family: 'Microsoft YaHei';"
+        "border: 1px solid rgba(160,216,239,80);");
+    m_trackedTaskLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_trackedTaskLabel->setWordWrap(true);
+    m_trackedTaskLabel->hide();
+
+    // 通知轮播定时器
+    m_notifyTimer = new QTimer(this);
+    m_notifyTimer->setInterval(2500);
+    connect(m_notifyTimer, &QTimer::timeout, this, &MainWindow::_showNextNotification_slot);
 
     battleActions = {"[攻击]", "[使用物品]", "[逃跑]"};
 
@@ -217,11 +260,18 @@ MainWindow::MainWindow(QWidget *parent)
     moveTimer = new QTimer(this);
     connect(moveTimer, &QTimer::timeout, this, [=, this]()
             {
+                // 1. 尝试复活满3小时的怪物
+                int currentMins = m_engine.GetGameTime().GetTotalMinutes();
+                m_engine.GetWorldMap().RespawnDeadMonsters(currentMins);
+                // 2. 刷新所有实体的显示状态（夜间隐藏、假死隐藏）
                 bool isNight = m_engine.IsNight();
                 for (auto it = interactableGraphics.constBegin(); it != interactableGraphics.constEnd(); ++it) {
                     const auto* info = m_engine.GetWorldMap().GetInteractableById(it.key());
-                    if (info && info->isNightOnly) {
-                        it.value()->setVisible(isNight);
+                    if (info) {
+                        bool visible = true;
+                        if (info->isNightOnly && !isNight) visible = false;
+                        if (info->isDead) visible = false;   // 假死的怪物贴图不可见
+                        it.value()->setVisible(visible);
                     }
                 }
 
@@ -355,6 +405,19 @@ MainWindow::MainWindow(QWidget *parent)
                     m_gameTimeLabel->move(10, 10);
                     m_gameTimeLabel->adjustSize();
                 }
+
+                // ── 任务 HUD 位置跟随（时间标签正下方，左侧对齐）──
+                int hudY = m_gameTimeLabel->y() + m_gameTimeLabel->height() + 6;
+                if (m_newTaskNotifyLabel && m_newTaskNotifyLabel->isVisible()) {
+                    m_newTaskNotifyLabel->adjustSize();
+                    m_newTaskNotifyLabel->move(10, hudY);
+                    hudY += m_newTaskNotifyLabel->height() + 4;
+                }
+                if (m_trackedTaskLabel && m_trackedTaskLabel->isVisible()) {
+                    m_trackedTaskLabel->adjustSize();
+                    m_trackedTaskLabel->move(10, hudY);
+                }
+                _updateTrackedTaskHUD();
 
                 // 更新统一交互 UI
                 if (m_shopWindow == nullptr) {
@@ -550,6 +613,30 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+    if (event->key() == Qt::Key_J) {
+        if (m_taskWindow == nullptr) {
+            m_taskWindow = new TaskWindow(&m_engine, nullptr);
+            connect(m_taskWindow, &QObject::destroyed, this, [this]() { m_taskWindow = nullptr; });
+            // ── 追踪信号：点击 [追踪] 按钮后更新追踪 ID 并打开大地图 ──
+            connect(m_taskWindow, &TaskWindow::trackTask, this, [this](int taskId) {
+                setTrackedTask(taskId);
+                openBigMap();
+            });
+            m_taskWindow->refreshTasks();
+            m_taskWindow->show();
+            m_taskWindow->raise();
+        } else {
+            if (m_taskWindow->isVisible()) {
+                m_taskWindow->hide();
+            } else {
+                m_taskWindow->refreshTasks();
+                m_taskWindow->show();
+                m_taskWindow->raise();
+            }
+        }
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape) {
         bool closedSomething = false;
         if (bigMapView && bigMapView->isVisible()) {
@@ -560,9 +647,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_shopWindow->close();
             closedSomething = true;
         }
-        if (m_backpackWindow != nullptr) {
-            m_backpackWindow->close();
-            closedSomething = true;
+        if (m_backpackWindow != nullptr && m_backpackWindow->isVisible()) {
+            m_backpackWindow->hide();
+            return;
+        }
+        if (m_taskWindow != nullptr && m_taskWindow->isVisible()) {
+            m_taskWindow->hide();
+            return;
         }
         if (closedSomething) return;
     }
@@ -653,12 +744,35 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                     }
                 }
             } else {
+                // ── NPC 对话前：快照当前 InProgress 任务 ID 集合 ──────────────
+                std::set<int> taskIdsBefore;
+                if (info.defaultInteraction == InteractionType::TalkToNPC) {
+                    for (const auto& t : m_engine.GetTaskManager().GetTasks()) {
+                        if (t->status == TaskStatus::InProgress) {
+                            taskIdsBefore.insert(t->id);
+                        }
+                    }
+                }
+
                 std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                 qDebug() << "Interaction result:" << QString::fromStdString(result);
 
                 if (info.defaultInteraction == InteractionType::StartBattle) {
                     updateBattleUI();
                 }
+
+                // ── NPC 对话后：检测新增的 InProgress 任务，推送 HUD 提示 ────
+                if (info.defaultInteraction == InteractionType::TalkToNPC) {
+                    for (const auto& t : m_engine.GetTaskManager().GetTasks()) {
+                        if (t->status == TaskStatus::InProgress &&
+                            taskIdsBefore.find(t->id) == taskIdsBefore.end()) {
+                            // 这是新接取的任务
+                            enqueueTaskNotification(
+                                QString("✅ 新任务：") + QString::fromStdString(t->description));
+                        }
+                    }
+                }
+
                 currentInteractables.clear();
                 updateInteractionUI();
             }
@@ -828,6 +942,16 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 if (checkNodeValid(targetX, targetY)) {
                     m_engine.GetWorldMap().SetPlayerPos(GamePoint(targetX, targetY));
                     autoPath.clear();
+                    
+                    // 同步 Qt 渲染层的像素坐标和移动逻辑坐标
+                    QPointF newPx(targetX * 16.0, targetY * 16.0);
+                    player->setPos(newPx);
+                    playerLogicalPos = QPointF(
+                        newPx.x() + player->boundingRect().width() / 2.0,
+                        newPx.y() + player->boundingRect().height()
+                    );
+                    view->centerOn(player);
+
                     bigMapView->hide();
                 }
             }
@@ -977,5 +1101,264 @@ void MainWindow::updateEntityFacing(int entityId, const QPointF& playerPx) {
         }
 
         pixItem->setPixmap(newPix);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 任务 HUD 实现
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 将新任务提示推入队列，若 Timer 未运行则立即触发第一条 ─────────────────────
+void MainWindow::enqueueTaskNotification(const QString& text) {
+    m_notifyQueue.push(text);
+    if (!m_notifyTimer->isActive()) {
+        _showNextNotification();  // 立即显示第一条
+        m_notifyTimer->start(2500); // 【必须补上这一句】让 Timer 接力后续队列
+    }
+}
+
+// ── Timer slot 代理（防止 connect 类型不匹配）────────────────────────────────
+void MainWindow::_showNextNotification_slot() {
+    _showNextNotification();
+}
+
+// ── 从队列弹出一条提示，用淡入/停留/淡出动画播放 ─────────────────────────────
+void MainWindow::_showNextNotification() {
+    if (m_notifyQueue.empty()) {
+        m_notifyTimer->stop();
+        m_newTaskNotifyLabel->hide();
+        return;
+    }
+
+    QString text = m_notifyQueue.front();
+    m_notifyQueue.pop();
+
+    m_newTaskNotifyLabel->setText(text);
+    m_newTaskNotifyLabel->adjustSize();
+
+    // 确保 opacity effect 存在
+    QGraphicsOpacityEffect *effect = qobject_cast<QGraphicsOpacityEffect*>(
+        m_newTaskNotifyLabel->graphicsEffect());
+    if (!effect) {
+        effect = new QGraphicsOpacityEffect(m_newTaskNotifyLabel);
+        m_newTaskNotifyLabel->setGraphicsEffect(effect);
+    }
+    effect->setOpacity(0.0);
+    m_newTaskNotifyLabel->show();
+    m_newTaskNotifyLabel->raise();
+
+    // 淡入 (400ms) → 停留 (1600ms) → 淡出 (400ms)，合计 2400ms < Timer 间隔 2500ms
+    auto *group = new QSequentialAnimationGroup(this);
+
+    auto *fadeIn = new QPropertyAnimation(effect, "opacity", this);
+    fadeIn->setDuration(400);
+    fadeIn->setStartValue(0.0);
+    fadeIn->setEndValue(1.0);
+    group->addAnimation(fadeIn);
+
+    group->addPause(1600);
+
+    auto *fadeOut = new QPropertyAnimation(effect, "opacity", this);
+    fadeOut->setDuration(400);
+    fadeOut->setStartValue(1.0);
+    fadeOut->setEndValue(0.0);
+    group->addAnimation(fadeOut);
+
+    connect(group, &QSequentialAnimationGroup::finished, this, [this]() {
+        if (m_notifyQueue.empty()) {
+            m_newTaskNotifyLabel->hide();
+            m_notifyTimer->stop();
+        }
+        // 不在此处触发下一条——由 Timer 按间隔触发，保证均匀间隔
+    });
+
+    group->start(QAbstractAnimation::DeleteWhenStopped);
+
+    // 若队列还有后续，确保 Timer 在运行中
+    if (!m_notifyQueue.empty() && !m_notifyTimer->isActive()) {
+        m_notifyTimer->start();
+    }
+}
+
+// ── 设置追踪任务 ID，刷新常驻面板 ───────────────────────────────────────────
+void MainWindow::setTrackedTask(int taskId) {
+    m_trackedTaskId = taskId;
+    _updateTrackedTaskHUD();
+}
+
+// ── 刷新常驻追踪面板文字内容 ─────────────────────────────────────────────────
+void MainWindow::_updateTrackedTaskHUD() {
+    if (m_trackedTaskId < 0) {
+        m_trackedTaskLabel->hide();
+        return;
+    }
+
+    const auto& tasks = m_engine.GetTaskManager().GetTasks();
+    for (const auto& t : tasks) {
+        if (t->id != m_trackedTaskId) continue;
+
+        if (t->status == TaskStatus::Submitted) {
+            // 任务已提交，取消追踪
+            m_trackedTaskId = -1;
+            m_trackedTaskLabel->hide();
+            return;
+        }
+
+        // 构建显示文字：任务名 + 每个目标的进度
+        QString text = QString("📍 %1").arg(QString::fromStdString(t->description));
+        for (const auto& obj : t->objectives) {
+            QString targetName = QString::fromStdString(obj.targetName);
+            if (obj.type == TaskType::BuyHealItem) targetName = "回复道具";
+            else if (obj.type == TaskType::AnyBuy) targetName = "任意物品";
+
+            QString progressColor = obj.isComplete() ? "#67c23a" : "#e6a23c";
+            text += QString("\n  <span style='color:%1'>%2 %3/%4</span>")
+                        .arg(progressColor)
+                        .arg(targetName)
+                        .arg(obj.currentAmount)
+                        .arg(obj.targetAmount);
+        }
+
+        m_trackedTaskLabel->setText(text);
+        m_trackedTaskLabel->setTextFormat(Qt::RichText);
+        m_trackedTaskLabel->adjustSize();
+        m_trackedTaskLabel->show();
+        m_trackedTaskLabel->raise();
+        return;
+    }
+
+    // 找不到该任务 ID（已被移除？），隐藏面板
+    m_trackedTaskLabel->hide();
+}
+
+// ── 打开大地图（等效 M 键），并绘制追踪标记 ─────────────────────────────────
+void MainWindow::openBigMap() {
+    bigMapView->setGeometry(view->geometry());
+    bigMapView->show();
+    bigMapView->raise();
+    bigMapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
+
+    // 若有追踪任务，在大地图上绘制目标标记
+    if (m_trackedTaskId >= 0) {
+        _placeMapTrackMarkers(m_trackedTaskId);
+    }
+}
+
+// ── 清除大地图上的所有追踪标记 ──────────────────────────────────────────────
+void MainWindow::_clearMapTrackMarkers() {
+    for (QGraphicsItem* item : m_trackMarkers) {
+        mapScene->removeItem(item);
+        delete item;
+    }
+    m_trackMarkers.clear();
+}
+
+// ── 自定义可点击地图标记（局部类，定义在 mainwindow.cpp 内） ─────────────────
+namespace {
+
+// 可点击的追踪标记：继承 QGraphicsEllipseItem，点击后执行传送回调
+class TrackMarkerItem : public QGraphicsEllipseItem {
+public:
+    // callback: 点击时调用，参数为标记对应的瓦片坐标 (tileX, tileY)
+    using ClickCallback = std::function<void(int, int)>;
+
+    TrackMarkerItem(int tileX, int tileY, ClickCallback cb, QGraphicsItem* parent = nullptr)
+        : QGraphicsEllipseItem(tileX * 16.0 - 8, tileY * 16.0 - 8, 32, 32, parent),
+          m_tileX(tileX), m_tileY(tileY), m_callback(std::move(cb))
+    {
+        setAcceptHoverEvents(true);
+        setCursor(Qt::PointingHandCursor);
+        setPen(QPen(QColor(255, 80, 80), 3));
+        setBrush(QBrush(QColor(255, 60, 60, 140)));
+        setZValue(50);  // 最高层，确保标记显示在地图和实体之上
+
+        // 中心文字（仅视觉提示，通过 QGraphicsTextItem 子项实现）
+        auto* label = new QGraphicsSimpleTextItem("!", this);
+        label->setBrush(Qt::white);
+        QFont f;
+        f.setBold(true);
+        f.setPixelSize(14);
+        label->setFont(f);
+        // 将文字居中于椭圆
+        label->setPos(tileX * 16.0 - 8 + 10, tileY * 16.0 - 8 + 6);
+    }
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent*) override {
+        if (m_callback) m_callback(m_tileX, m_tileY);
+    }
+
+    // 悬停高亮效果
+    void hoverEnterEvent(QGraphicsSceneHoverEvent*) override {
+        setPen(QPen(QColor(255, 200, 0), 3));
+        setBrush(QBrush(QColor(255, 180, 0, 170)));
+    }
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent*) override {
+        setPen(QPen(QColor(255, 80, 80), 3));
+        setBrush(QBrush(QColor(255, 60, 60, 140)));
+    }
+
+private:
+    int m_tileX, m_tileY;
+    ClickCallback m_callback;
+};
+
+} // anonymous namespace
+
+// ── 为指定任务的未完成 KillEnemy 目标在大地图上绘制红色标记 ─────────────────
+void MainWindow::_placeMapTrackMarkers(int taskId) {
+    _clearMapTrackMarkers();
+
+    const auto& tasks = m_engine.GetTaskManager().GetTasks();
+    const Task* targetTask = nullptr;
+    for (const auto& t : tasks) {
+        if (t->id == taskId) { targetTask = t.get(); break; }
+    }
+    if (!targetTask) return;
+
+    // 收集尚未完成的 KillEnemy 目标名称集合
+    std::set<std::string> pendingTargets;
+    for (const auto& obj : targetTask->objectives) {
+        if (obj.type == TaskType::KillEnemy && !obj.isComplete()) {
+            pendingTargets.insert(obj.targetName);
+        }
+    }
+    if (pendingTargets.empty()) return;
+
+    // 遍历地图上所有实体，找到匹配的怪物
+    const auto& allEntities = m_engine.GetWorldMap().CheckNearbyInteractables(99999);
+    // CheckNearbyInteractables 以玩家为中心，但我们需要所有实体，
+    // 改用直接访问 WorldMap 的 GetInteractableById 不够方便；
+    // 此处利用大半径（99999 格）覆盖整张地图来获取全部实体。
+
+    for (const auto& info : allEntities) {
+        if (info.type != InteractableType::Enemy && info.type != InteractableType::Boss) continue;
+        if (pendingTargets.find(info.displayName) == pendingTargets.end()) continue;
+
+        int tileX = static_cast<int>(info.pos.x);
+        int tileY = static_cast<int>(info.pos.y);
+
+        // 传送回调：点击标记后将玩家移动到标记格附近并关闭大地图
+        auto callback = [this, tileX, tileY](int /*tx*/, int /*ty*/) {
+            // 传送到怪物正上方一格（避免与怪物重叠）
+            int destX = tileX;
+            int destY = std::max(0, tileY - 1);
+
+            m_engine.GetWorldMap().SetPlayerPos(GamePoint(destX, destY));
+            // 同步像素坐标
+            QPointF newPx(destX * 16.0, destY * 16.0);
+            player->setPos(newPx);
+            playerLogicalPos = QPointF(
+                newPx.x() + player->boundingRect().width()  / 2.0,
+                newPx.y() + player->boundingRect().height());
+            view->centerOn(player);
+
+            bigMapView->hide();
+            _clearMapTrackMarkers();
+        };
+
+        auto* marker = new TrackMarkerItem(tileX, tileY, callback);
+        mapScene->addItem(marker);
+        m_trackMarkers.append(marker);
     }
 }
