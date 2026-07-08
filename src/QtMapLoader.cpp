@@ -77,6 +77,16 @@ static void initEntitySpriteCache() {
     loadSpriteSheet(202, "character_20_frame32x32.png"); // 体育委员长 PECommittee
     loadSpriteSheet(203, "character_23_frame32x32.png"); // 校长 Principal
     loadSpriteSheet(204, "character_5_frame32x32.png");  // 宿管阿姨 DormGuard
+
+    // ── NPC 贴图注册（500-599 段为 NPC 专用） ────────────────────
+    loadSpriteSheet(500, "character_32_frame32x32.png"); // 办公室 王老师
+    loadSpriteSheet(501, "character_30_frame32x32.png"); // 办公室 刘老师
+    loadSpriteSheet(502, "character_31_frame32x32.png"); // 办公室 周老师
+    loadSpriteSheet(503, "character_26_frame32x32.png"); // 宿舍 小王
+    loadSpriteSheet(504, "character_22_frame32x32.png"); // 教室1 小明
+    loadSpriteSheet(505, "character_23_frame32x32.png"); // 教室2 小华
+    loadSpriteSheet(506, "character_24_frame32x32.png"); // 商店 商人
+    // 507 character_25 备用
     // TODO: 后续补充其他怪物和NPC的贴图
     // ...
 }

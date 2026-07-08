@@ -316,7 +316,7 @@
                         {
                          "name":"spriteId",
                          "type":"int",
-                         "value":6
+                         "value":503
                         }],
                  "rotation":0,
                  "type":"NPC",

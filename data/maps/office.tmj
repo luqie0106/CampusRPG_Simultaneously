@@ -201,7 +201,7 @@
                         {
                          "name":"spriteId",
                          "type":"int",
-                         "value":2
+                         "value":500
                         }],
                  "rotation":0,
                  "type":"NPC",
@@ -239,7 +239,7 @@
                         {
                          "name":"spriteId",
                          "type":"int",
-                         "value":1
+                         "value":501
                         }],
                  "rotation":0,
                  "type":"NPC",
@@ -277,7 +277,7 @@
                         {
                          "name":"spriteId",
                          "type":"int",
-                         "value":3
+                         "value":502
                         }],
                  "rotation":0,
                  "type":"NPC",
