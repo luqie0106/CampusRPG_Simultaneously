@@ -577,6 +577,22 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         if (!currentInteractables.empty() && selectedInteractionIndex >= 0 && selectedInteractionIndex < currentInteractables.size()) {
             const auto& info = currentInteractables[selectedInteractionIndex];
             
+            // 实体朝向玩家：计算相对位置，翻转贴图（无论是怪物还是NPC）
+            if (interactableGraphics.contains(info.id)) {
+                QGraphicsItem* entityItem = interactableGraphics[info.id];
+                if (entityItem) {
+                    qreal px = playerLogicalPos.x();
+                    qreal mx = entityItem->x() + entityItem->boundingRect().width() / 2.0;
+                    QTransform transform;
+                    // 假设默认朝左，如果玩家在右侧，则翻转贴图使其朝右
+                    if (px > mx) {
+                        transform.scale(-1, 1);
+                        transform.translate(-entityItem->boundingRect().width(), 0);
+                    }
+                    entityItem->setTransform(transform);
+                }
+            }
+
             if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
                 if (m_shopWindow == nullptr) {
                     m_shopWindow = new ShopWindow(&m_engine, this);
@@ -595,22 +611,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             } else {
                 std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                 qDebug() << "Interaction result:" << QString::fromStdString(result);
-                
-                // 怪物朝向玩家：计算相对位置，翻转怪物贴图
-                if (info.defaultInteraction == InteractionType::StartBattle && interactableGraphics.contains(info.id)) {
-                    QGraphicsItem* monsterItem = interactableGraphics[info.id];
-                    if (monsterItem) {
-                        qreal px = playerLogicalPos.x();
-                        qreal mx = monsterItem->x() + monsterItem->boundingRect().width() / 2.0;
-                        QTransform transform;
-                        // 假设默认朝左，如果玩家在右侧，则翻转贴图使其朝右
-                        if (px > mx) {
-                            transform.scale(-1, 1);
-                            transform.translate(-monsterItem->boundingRect().width(), 0);
-                        }
-                        monsterItem->setTransform(transform);
-                    }
-                }
 
                 if (info.defaultInteraction == InteractionType::StartBattle) {
                     updateBattleUI();

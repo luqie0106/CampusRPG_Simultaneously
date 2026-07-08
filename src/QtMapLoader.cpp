@@ -172,6 +172,22 @@ static void parseObjectGroup(const QJsonObject& layerObj,
             }
             worldMap->AddInteractable(std::move(info));
 
+            // 在地图上绘制一个临时方块作为 NPC 占位符
+            if (scene) {
+                QPixmap pix(tileWidth, tileHeight);
+                pix.fill(Qt::transparent);
+                QPainter painter(&pix);
+                painter.fillRect(0, 0, tileWidth, tileHeight, QColor(0, 0, 255, 200)); // 蓝色
+                
+                QGraphicsPixmapItem* item = new QGraphicsPixmapItem(pix);
+                item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+                item->setZValue(5);
+                item->setData(0, objId);
+                item->setData(1, "NPC");
+                item->setData(2, hasShop);
+                scene->addItem(item);
+            }
+
             qDebug() << "  [NPC] id=" << objId << "name=" << npcName
                      << "hasShop=" << hasShop << "tile=(" << tileX << "," << tileY << ")";
             continue;
