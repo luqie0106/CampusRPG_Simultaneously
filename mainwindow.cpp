@@ -577,20 +577,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         if (!currentInteractables.empty() && selectedInteractionIndex >= 0 && selectedInteractionIndex < currentInteractables.size()) {
             const auto& info = currentInteractables[selectedInteractionIndex];
             
-            // 实体朝向玩家：计算相对位置，翻转贴图（无论是怪物还是NPC）
+            // 实体朝向玩家：根据相对位置切换方向贴图（无论是怪物还是NPC）
             if (interactableGraphics.contains(info.id)) {
-                QGraphicsItem* entityItem = interactableGraphics[info.id];
-                if (entityItem) {
-                    qreal px = playerLogicalPos.x();
-                    qreal mx = entityItem->x() + entityItem->boundingRect().width() / 2.0;
-                    QTransform transform;
-                    // 假设默认朝左，如果玩家在右侧，则翻转贴图使其朝右
-                    if (px > mx) {
-                        transform.scale(-1, 1);
-                        transform.translate(-entityItem->boundingRect().width(), 0);
-                    }
-                    entityItem->setTransform(transform);
-                }
+                updateEntityFacing(info.id, playerLogicalPos);
             }
 
             if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
@@ -853,45 +842,62 @@ void MainWindow::onBattleItemUsed(const QString& resultLog) {
 void MainWindow::updateEntityFacing(int entityId, const QPointF& playerPx) {
     if (!interactableGraphics.contains(entityId)) return;
     QGraphicsItem* item = interactableGraphics[entityId];
-    if (item->data(1).toString() != "Monster") return;
+    QString entityType = item->data(1).toString();
+    if (entityType != "Monster" && entityType != "NPC") return;
 
     QGraphicsPixmapItem* pixItem = dynamic_cast<QGraphicsPixmapItem*>(item);
     if (!pixItem) return;
 
-    bool isBoss = item->data(2).toBool();
+    int sprId = item->data(3).toInt();
+    const auto* sprites = QtMapLoader::GetEntitySprites(sprId);
 
     QPointF enemyCenter = pixItem->sceneBoundingRect().center();
     qreal dx = playerPx.x() - enemyCenter.x();
     qreal dy = playerPx.y() - enemyCenter.y();
 
-    int w = pixItem->pixmap().width();
-    int h = pixItem->pixmap().height();
-    QPixmap newPix(w, h);
-    newPix.fill(Qt::transparent);
-    QPainter p(&newPix);
-    p.fillRect(0, 0, w, h, QColor(isBoss ? 128 : 255, 0, isBoss ? 128 : 0, 200));
-    
-    p.setBrush(Qt::black);
-    p.setPen(Qt::NoPen);
-
-    if (qAbs(dx) > qAbs(dy)) {
-        if (dx > 0) {
-            p.drawEllipse(w - 6, h / 2 - 4, 4, 4);
-            p.drawEllipse(w - 6, h / 2 + 4, 4, 4);
+    if (sprites) {
+        // 有实际贴图：根据玩家相对位置切换方向帧
+        // 方向: [0]=左, [1]=上, [2]=右, [3]=下
+        int dir;
+        if (qAbs(dx) > qAbs(dy)) {
+            dir = (dx > 0) ? 2 : 0;  // 右 : 左
         } else {
-            p.drawEllipse(2, h / 2 - 4, 4, 4);
-            p.drawEllipse(2, h / 2 + 4, 4, 4);
+            dir = (dy > 0) ? 3 : 1;  // 下 : 上
         }
+        pixItem->setPixmap((*sprites)[dir]);
+        item->setData(4, dir);
     } else {
-        if (dy > 0) {
-            p.drawEllipse(w / 2 - 4, h - 6, 4, 4);
-            p.drawEllipse(w / 2 + 4, h - 6, 4, 4);
+        // 无贴图：回退到纯色方块 + 眼睛
+        bool isBoss = item->data(2).toBool();
+        int w = pixItem->pixmap().width();
+        int h = pixItem->pixmap().height();
+        QPixmap newPix(w, h);
+        newPix.fill(Qt::transparent);
+        QPainter p(&newPix);
+        p.fillRect(0, 0, w, h, QColor(isBoss ? 128 : 255, 0, isBoss ? 128 : 0, 200));
+
+        p.setBrush(Qt::black);
+        p.setPen(Qt::NoPen);
+
+        if (qAbs(dx) > qAbs(dy)) {
+            if (dx > 0) {
+                p.drawEllipse(w - 6, h / 2 - 4, 4, 4);
+                p.drawEllipse(w - 6, h / 2 + 4, 4, 4);
+            } else {
+                p.drawEllipse(2, h / 2 - 4, 4, 4);
+                p.drawEllipse(2, h / 2 + 4, 4, 4);
+            }
         } else {
-            p.setBrush(Qt::darkGray);
-            p.drawEllipse(w / 2 - 4, 2, 4, 4);
-            p.drawEllipse(w / 2 + 4, 2, 4, 4);
+            if (dy > 0) {
+                p.drawEllipse(w / 2 - 4, h - 6, 4, 4);
+                p.drawEllipse(w / 2 + 4, h - 6, 4, 4);
+            } else {
+                p.setBrush(Qt::darkGray);
+                p.drawEllipse(w / 2 - 4, 2, 4, 4);
+                p.drawEllipse(w / 2 + 4, 2, 4, 4);
+            }
         }
+
+        pixItem->setPixmap(newPix);
     }
-    
-    pixItem->setPixmap(newPix);
 }

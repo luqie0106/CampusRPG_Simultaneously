@@ -3,12 +3,82 @@
 #include "Enemy.h"
 #include <QXmlStreamReader>
 #include <QFileInfo>
+#include <QRegularExpression>
+#include <array>
 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 静态 Tileset 图片缓存：避免重复加载同一张大图
 // ─────────────────────────────────────────────────────────────────────────────
 static QHash<QString, QPixmap> s_pixmapCache;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 怪物/NPC 贴图缓存：spriteId → 4 方向贴图 [0]=左, [1]=上, [2]=右, [3]=下
+// 贴图规格：96×128 精灵表（3列×4行，每帧32×32），取中间列(index=1)
+// ─────────────────────────────────────────────────────────────────────────────
+static QHash<int, std::array<QPixmap, 4>> s_entitySpriteCache;
+static bool s_entitySpriteCacheInitialized = false;
+
+static void initEntitySpriteCache() {
+    if (s_entitySpriteCacheInitialized) return;
+    s_entitySpriteCacheInitialized = true;
+
+    constexpr int FRAME_W = 32;
+    constexpr int FRAME_H = 32;
+    constexpr int MID_COL = 1; // 中间列 index
+
+    // 加载一张精灵表并切出中间列4帧
+    auto loadSpriteSheet = [&](int spriteId, const QString& fileName) {
+        // 优先从 data/tiles/ 加载，回退到 data/sprite_split/
+        QString path = QString(PROJECT_DATA_DIR) + "/tiles/" + fileName;
+        if (!QFile::exists(path)) {
+            path = QString(PROJECT_DATA_DIR) + "/sprite_split/" + fileName;
+        }
+        if (!QFile::exists(path)) {
+            // 尝试在 sprite_split 子目录中查找
+            QString baseName = QFileInfo(fileName).baseName();
+            // 提取角色编号，如 character_22
+            QRegularExpression rx("(character_\\d+)");
+            auto match = rx.match(baseName);
+            if (match.hasMatch()) {
+                QString folder = match.captured(1);
+                path = QString(PROJECT_DATA_DIR) + "/sprite_split/" + folder + "/" + fileName;
+            }
+        }
+
+        QPixmap sheet(path);
+        if (sheet.isNull()) {
+            qWarning() << "QtMapLoader: 无法加载实体贴图 spriteId=" << spriteId << "path=" << path;
+            return;
+        }
+
+        std::array<QPixmap, 4> frames;
+        // 行序：0=下, 1=左, 2=右, 3=上
+        // 方向映射：[0]=左, [1]=上, [2]=右, [3]=下
+        frames[0] = sheet.copy(FRAME_W * MID_COL, FRAME_H * 1, FRAME_W, FRAME_H); // 左
+        frames[1] = sheet.copy(FRAME_W * MID_COL, FRAME_H * 3, FRAME_W, FRAME_H); // 上
+        frames[2] = sheet.copy(FRAME_W * MID_COL, FRAME_H * 2, FRAME_W, FRAME_H); // 右
+        frames[3] = sheet.copy(FRAME_W * MID_COL, FRAME_H * 0, FRAME_W, FRAME_H); // 下
+
+        s_entitySpriteCache[spriteId] = frames;
+        qDebug() << "QtMapLoader: 加载实体贴图 spriteId=" << spriteId << "path=" << path;
+    };
+
+    // ── 怪物贴图注册 ────────────────────────────────────────────────
+    loadSpriteSheet(101, "character_22_frame32x32.png"); // 校园混混 Bully
+    loadSpriteSheet(102, "character_1_frame32x32.png");  // 逃课大神 Skipper
+    // TODO: 后续补充其他怪物和NPC的贴图
+    // ...
+}
+
+const std::array<QPixmap, 4>* QtMapLoader::GetEntitySprites(int spriteId) {
+    initEntitySpriteCache();
+    auto it = s_entitySpriteCache.find(spriteId);
+    if (it != s_entitySpriteCache.end()) {
+        return &it.value();
+    }
+    return nullptr;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 将 JSON 里的相对图片路径（../tiles/xxx.png）解析为绝对物理路径
@@ -133,23 +203,36 @@ static void parseObjectGroup(const QJsonObject& layerObj,
             if (isBoss) info.type = InteractableType::Boss;
             worldMap->AddInteractable(std::move(info));
 
-            // 在地图上绘制一个临时方块作为怪物占位符
+            // 在地图上绘制怪物贴图
             if (scene) {
-                QPixmap pix(tileWidth, tileHeight);
-                pix.fill(Qt::transparent);
-                QPainter painter(&pix);
-                if (isBoss) {
-                    painter.fillRect(0, 0, tileWidth, tileHeight, QColor(128, 0, 128, 200)); // Purple
+                initEntitySpriteCache();
+                QGraphicsPixmapItem* item = nullptr;
+                const auto* sprites = QtMapLoader::GetEntitySprites(sprId);
+
+                if (sprites && !(*sprites)[3].isNull()) {
+                    // 有实际贴图：使用朝下帧（默认方向）
+                    item = new QGraphicsPixmapItem((*sprites)[3]);
+                    item->setPos(px + pixelOffsetX, py + pixelOffsetY);
                 } else {
-                    painter.fillRect(0, 0, tileWidth, tileHeight, QColor(255, 0, 0, 200)); // Red
+                    // 无贴图：使用纯色方块作为占位符
+                    QPixmap pix(tileWidth, tileHeight);
+                    pix.fill(Qt::transparent);
+                    QPainter painter(&pix);
+                    if (isBoss) {
+                        painter.fillRect(0, 0, tileWidth, tileHeight, QColor(128, 0, 128, 200));
+                    } else {
+                        painter.fillRect(0, 0, tileWidth, tileHeight, QColor(255, 0, 0, 200));
+                    }
+                    item = new QGraphicsPixmapItem(pix);
+                    item->setPos(px + pixelOffsetX, py + pixelOffsetY);
                 }
-                
-                QGraphicsPixmapItem* item = new QGraphicsPixmapItem(pix);
-                item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+
                 item->setZValue(5);
                 item->setData(0, objId);
                 item->setData(1, "Monster");
                 item->setData(2, isBoss);
+                item->setData(3, sprId);    // spriteId，供 updateEntityFacing 查询贴图
+                item->setData(4, 3);        // 当前方向索引，默认朝下(3)
                 scene->addItem(item);
             }
 
@@ -163,6 +246,7 @@ static void parseObjectGroup(const QJsonObject& layerObj,
             QString npcName = getProperty(props, "npcName").toString();
             if (npcName.isEmpty()) npcName = objName;
             bool hasShop = getProperty(props, "hasShop").toBool(false);
+            int  sprId   = getProperty(props, "spriteId").toInt(0);
 
             InteractableInfo info;
             if (hasShop) {
@@ -172,24 +256,37 @@ static void parseObjectGroup(const QJsonObject& layerObj,
             }
             worldMap->AddInteractable(std::move(info));
 
-            // 在地图上绘制一个临时方块作为 NPC 占位符
+            // 在地图上绘制 NPC 贴图
             if (scene) {
-                QPixmap pix(tileWidth, tileHeight);
-                pix.fill(Qt::transparent);
-                QPainter painter(&pix);
-                painter.fillRect(0, 0, tileWidth, tileHeight, QColor(0, 0, 255, 200)); // 蓝色
-                
-                QGraphicsPixmapItem* item = new QGraphicsPixmapItem(pix);
-                item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+                initEntitySpriteCache();
+                QGraphicsPixmapItem* item = nullptr;
+                const auto* sprites = QtMapLoader::GetEntitySprites(sprId);
+
+                if (sprites && !(*sprites)[3].isNull()) {
+                    item = new QGraphicsPixmapItem((*sprites)[3]);
+                    item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+                } else {
+                    // 无贴图：使用蓝色方块作为占位符
+                    QPixmap pix(tileWidth, tileHeight);
+                    pix.fill(Qt::transparent);
+                    QPainter painter(&pix);
+                    painter.fillRect(0, 0, tileWidth, tileHeight, QColor(0, 0, 255, 200));
+                    item = new QGraphicsPixmapItem(pix);
+                    item->setPos(px + pixelOffsetX, py + pixelOffsetY);
+                }
+
                 item->setZValue(5);
                 item->setData(0, objId);
                 item->setData(1, "NPC");
                 item->setData(2, hasShop);
+                item->setData(3, sprId);
+                item->setData(4, 3);
                 scene->addItem(item);
             }
 
             qDebug() << "  [NPC] id=" << objId << "name=" << npcName
-                     << "hasShop=" << hasShop << "tile=(" << tileX << "," << tileY << ")";
+                     << "hasShop=" << hasShop << "spriteId=" << sprId
+                     << "tile=(" << tileX << "," << tileY << ")";
             continue;
         }
 
