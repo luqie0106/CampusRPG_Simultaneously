@@ -66,8 +66,13 @@ static void initEntitySpriteCache() {
 
     // ── 怪物贴图注册 ────────────────────────────────────────────────
     loadSpriteSheet(101, "character_22_frame32x32.png"); // 校园混混 Bully
+<<<<<<< HEAD
     loadSpriteSheet(102, "character_1_frame32x32.png");  // 逃课大神 Skipper
     // TODO: 后续补充其他怪物和NPC的贴图
+=======
+    // TODO: 后续补充其他怪物和NPC的贴图
+    // loadSpriteSheet(102, "character_XX_frame32x32.png"); // 逃课大神
+>>>>>>> 5ea8253609a78bca2030c4eaf76b1a5c5f6bc925
     // ...
 }
 
