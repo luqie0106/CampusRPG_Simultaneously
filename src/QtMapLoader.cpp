@@ -1,6 +1,8 @@
 #include "Common.h"
 #include "QtMapLoader.h"
 #include "Enemy.h"
+#include <QXmlStreamReader>
+#include <QFileInfo>
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,10 +248,74 @@ void QtMapLoader::LoadMapToScene(const QString& jsonPath,
     for (int i = 0; i < tilesetsArray.size(); ++i) {
         QJsonObject tsObj = tilesetsArray[i].toObject();
 
-        // 跳过外部 .tsx 引用（暂不支持）
-        if (!tsObj.contains("image")) {
-            qWarning() << "LoadMapToScene: 跳过外部 .tsx tileset (firstgid="
-                       << tsObj["firstgid"].toInt() << ") in" << jsonPath;
+        // 检查是否为外部 .tsx 引用
+        if (!tsObj.contains("image") && tsObj.contains("source")) {
+            QString source = tsObj["source"].toString();
+            QString tsxPath = QFileInfo(jsonPath).dir().filePath(source);
+            
+            QFile tsxFile(tsxPath);
+            if (tsxFile.open(QIODevice::ReadOnly)) {
+                QXmlStreamReader xml(&tsxFile);
+                TilesetInfo ts;
+                ts.firstGid = tsObj["firstgid"].toInt();
+                ts.tileW = tileWidth;
+                ts.tileH = tileHeight;
+                ts.spacing = 0;
+                ts.margin = 0;
+                ts.columns = 1;
+                
+                while (!xml.atEnd() && !xml.hasError()) {
+                    QXmlStreamReader::TokenType token = xml.readNext();
+                    if (token == QXmlStreamReader::StartElement) {
+                        if (xml.name() == QStringLiteral("tileset")) {
+                            if (xml.attributes().hasAttribute("tilewidth")) ts.tileW = xml.attributes().value("tilewidth").toInt();
+                            if (xml.attributes().hasAttribute("tileheight")) ts.tileH = xml.attributes().value("tileheight").toInt();
+                            if (xml.attributes().hasAttribute("spacing")) ts.spacing = xml.attributes().value("spacing").toInt();
+                            if (xml.attributes().hasAttribute("margin")) ts.margin = xml.attributes().value("margin").toInt();
+                            if (xml.attributes().hasAttribute("columns")) ts.columns = xml.attributes().value("columns").toInt();
+                        } else if (xml.name() == QStringLiteral("image")) {
+                            QString imgSource = xml.attributes().value("source").toString();
+                            QString imagePath = resolveImagePath(imgSource);
+                            if (!s_pixmapCache.contains(imagePath)) {
+                                QPixmap px(imagePath);
+                                if (px.isNull()) {
+                                    qWarning() << "LoadMapToScene: 无法加载 TSX tileset 图片:" << imagePath;
+                                }
+                                s_pixmapCache.insert(imagePath, px);
+                            }
+                            ts.image = s_pixmapCache[imagePath];
+                            
+                            if (ts.columns <= 0) {
+                                int iw = xml.attributes().value("width").toInt();
+                                if (iw > 0 && ts.tileW > 0) {
+                                    ts.columns = (iw - 2 * ts.margin + ts.spacing) / (ts.tileW + ts.spacing);
+                                }
+                                if (ts.columns <= 0) ts.columns = 1;
+                            }
+                        } else if (xml.name() == QStringLiteral("tile")) {
+                            int localId = xml.attributes().value("id").toInt();
+                            while (!xml.atEnd()) {
+                                QXmlStreamReader::TokenType t = xml.readNext();
+                                if (t == QXmlStreamReader::EndElement && xml.name() == QStringLiteral("tile")) {
+                                    break;
+                                }
+                                if (t == QXmlStreamReader::StartElement && xml.name() == QStringLiteral("property")) {
+                                    if (xml.attributes().value("name") == QStringLiteral("solid") &&
+                                        xml.attributes().value("value") == QStringLiteral("true")) {
+                                        ts.solidTiles.insert(localId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!ts.image.isNull()) {
+                    tilesets.append(ts);
+                }
+            } else {
+                qWarning() << "LoadMapToScene: 无法读取外部 TSX 文件:" << tsxPath;
+            }
             continue;
         }
 

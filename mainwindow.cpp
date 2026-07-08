@@ -500,16 +500,33 @@ void MainWindow::updateInteractionUI() {
 // 按键按下触发
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Escape) {
+        bool closedSomething = false;
+        if (bigMapView && bigMapView->isVisible()) {
+            bigMapView->hide();
+            closedSomething = true;
+        }
+        if (m_shopWindow != nullptr) {
+            m_shopWindow->close();
+            closedSomething = true;
+        }
+        if (m_backpackWindow != nullptr) {
+            m_backpackWindow->close();
+            closedSomething = true;
+        }
+        if (closedSomething) return;
+    }
+
     if (m_engine.GetState() == GameState::Battle) {
         if (event->key() == Qt::Key_F) {
             std::string result = m_engine.BattlePlayerAttack();
+            updateBattleUI();
+            updateEquipmentUI();
             if (result.find("被击败了") != std::string::npos || result.find("倒下") != std::string::npos) {
                 QMessageBox::information(this, "战斗结束", QString::fromStdString(result));
             } else if (result.find("获得了") != std::string::npos || result.find("胜利") != std::string::npos) {
                 QMessageBox::information(this, "战斗胜利", QString::fromStdString(result));
             }
-            updateBattleUI();
-            updateEquipmentUI();
         } else if (event->key() == Qt::Key_B) {
             if (m_backpackWindow == nullptr) {
                 m_backpackWindow = new BackpackWindow(&m_engine, nullptr);
