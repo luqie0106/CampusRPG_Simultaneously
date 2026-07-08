@@ -104,6 +104,7 @@ static void parseObjectGroup(const QJsonObject& layerObj,
 
             if (isBoss) {
                 switch (sprId) {
+                    case 100: tpl = Enemy::ForestBoss();     break;
                     case 201: tpl = Enemy::DeanOfStudents(); break;
                     case 202: tpl = Enemy::PECommittee();    break;
                     case 203: tpl = Enemy::Principal();      break;
@@ -117,6 +118,8 @@ static void parseObjectGroup(const QJsonObject& layerObj,
                     case 102: tpl = Enemy::Skipper();        break;
                     case 103: tpl = Enemy::Cheater();        break;
                     case 104: tpl = Enemy::GangMember();     break;
+                    case 105: tpl = Enemy::ForestMonster1(); break;
+                    case 106: tpl = Enemy::ForestMonster2(); break;
                     case 107: tpl = Enemy::MidnightNerd();   break;
                     default:  tpl = Enemy::Bully();          break;
                 }

@@ -64,11 +64,14 @@ class Enemy {
         static Enemy Skipper();         // 逃课大神
         static Enemy Cheater();         // 考试黄牛
         static Enemy GangMember();      // 小弟弟
+        static Enemy ForestMonster1();  // 树林野兽
+        static Enemy ForestMonster2();  // 幽暗黑影
 
         // ========== Boss 工厂 ==========
         static Enemy DeanOfStudents();  // 教导主任  (瘫瘪 1 回合)
         static Enemy PECommittee();     // 体育委员长  (瘫瘪 2 回合)
         static Enemy Principal();       // 校长      (瘫瘪 3 回合)
+        static Enemy ForestBoss();      // 树林霸主
 
         // ========== 夜晚专属怪物工厂 ==========
         // 宿管阿姨：超高血量高防御 Boss，高破韧伤害 + 凋零 debuff

@@ -256,3 +256,22 @@ Enemy Enemy::MidnightNerd() {
     //               名字             HP  ATK DEF  EXP  GOLD  韧度  瘫痪（小怪无意义）
     return Enemy("午夜卷王幽灵",       120,  60,   2, 150,  200,    0,   0);
 }
+
+Enemy Enemy::ForestMonster1() {
+    Enemy e("树林野犬", 120, 30, 5, 25, 20, 0);
+    e.SetDropItem(Food::Pork());
+    return e;
+}
+
+Enemy Enemy::ForestMonster2() {
+    Enemy e("幽暗黑影", 180, 45, 15, 45, 40, 0);
+    e.SetDropItem(Food::Steak());
+    return e;
+}
+
+Enemy Enemy::ForestBoss() {
+    // 500 HP, 80 ATK, match JSON
+    Enemy e("小树林霸主", 500, 80, 30, 200, 250, 4.0, 2);
+    e.SetDropItem(Equipment::DiamondSword());
+    return e;
+}
