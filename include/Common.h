@@ -33,6 +33,23 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QFileInfo>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QCloseEvent>
+#include <QGroupBox>
+#include <QLineEdit>
+#include <QProgressBar>
+#include <QRadioButton>
+#include <QFrame>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsOpacityEffect>
+#include <QGraphicsSceneEvent>
+#include <QPainter>
+#include <QPauseAnimation>
+#include <QPropertyAnimation>
+#include <QRegularExpression>
+#include <QSequentialAnimationGroup>
+#include <QXmlStreamReader>
 
 // C++ Standard Library Includes
 #include <algorithm>
@@ -54,30 +71,5 @@
 #include <thread>
 #include <vector>
 #include <unordered_set>
-
-// Auto-extracted Standard Libraries
-#include <QMenu>
-#include <QMouseEvent>
-
-// Auto-extracted Standard Libraries
-#include <QCloseEvent>
-
-// Auto-extracted Standard Libraries
-#include <QGroupBox>
-#include <QLineEdit>
-#include <QProgressBar>
-#include <QRadioButton>
-
-// Auto-extracted Standard Libraries
-#include <QFrame>
-#include <QGraphicsEllipseItem>
-#include <QGraphicsOpacityEffect>
-#include <QGraphicsSceneEvent>
-#include <QPainter>
-#include <QPauseAnimation>
-#include <QPropertyAnimation>
-#include <QRegularExpression>
-#include <QSequentialAnimationGroup>
-#include <QXmlStreamReader>
 #include <array>
 #include <set>
