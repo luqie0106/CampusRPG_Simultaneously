@@ -893,7 +893,8 @@ bool GameEngine::CheatLevelUp() {
         // 每次加足够多的经验确保升一级
         m_player->AddExp(m_player->ExpToNextLevel() * 2 + 9999);
     }
-    // 顺手回满血
+    // 顺手回满血，给9999金币
     m_player->HealHp(m_player->GetMaxHealth());
+    m_player->AddGold(9999);
     return true;
 }

@@ -155,7 +155,12 @@ static void parseObjectGroup(const QJsonObject& layerObj,
 
         QString objType  = obj["type"].toString();
         QString objName  = obj["name"].toString();
-        int     objId    = obj["id"].toInt();          // Tiled 自动分配，地图内唯一
+        
+        // 修复：Tiled 自动分配的 id 仅在单张地图内唯一，加载多张地图会导致严重冲突！
+        // 改为分配全局唯一的自增 ID。
+        static int s_globalEntityId = 10000;
+        int     objId    = s_globalEntityId++;
+        
         QJsonArray props = obj["properties"].toArray();
 
         GamePoint pos(tileX, tileY);
