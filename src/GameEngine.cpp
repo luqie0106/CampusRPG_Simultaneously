@@ -447,6 +447,7 @@ std::string GameEngine::_SettleVictory() {
     if (!m_currentEnemy || !m_player) return "";
 
     std::stringstream ss;
+    std::string enemyName = m_currentEnemy->GetName(); // 先记录名字，后面 optional 清空后就拿不到了
     int gainExp  = m_currentEnemy->GetExp();
     int gainGold = m_currentEnemy->GetGold();
 
@@ -454,7 +455,8 @@ std::string GameEngine::_SettleVictory() {
     ss << "获得经验值：+" << gainExp << "\n";
     ss << "获得金币：  +" << gainGold << "\n";
 
-    // TODO: 接入掉落物系统后在此随机掉落物品
+    // ── 通知任务系统：怪物已被击败（任务5 修复：之前缺少此调用导致杀怪任务永远无法完成）
+    m_taskManager.OnEnemyKilled(enemyName);
 
     bool leveled = m_player->AddExp(gainExp);
     m_player->AddGold(gainGold);
@@ -879,3 +881,19 @@ void GameEngine::_OnNightToDay() {
 }
 
 // (Removed _SpawnNightEnemies as night monsters are now placed via QtMapLoader and visibility is toggled)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 测试专用：L 键快捷升到最高等级
+// ─────────────────────────────────────────────────────────────────────────────
+bool GameEngine::CheatLevelUp() {
+    if (!m_cheatEnabled) return false;
+    if (!m_player) return false;
+    // 反复调用 AddExp 直至到达 MAX_LEVEL
+    while (m_player->GetLevel() < Character::MAX_LEVEL) {
+        // 每次加足够多的经验确保升一级
+        m_player->AddExp(m_player->ExpToNextLevel() * 2 + 9999);
+    }
+    // 顺手回满血
+    m_player->HealHp(m_player->GetMaxHealth());
+    return true;
+}

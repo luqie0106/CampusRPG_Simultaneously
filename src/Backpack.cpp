@@ -114,6 +114,10 @@ std::string Backpack::UseItem(int index, Character& player) {
         ss << "【" << coupon->getName() << "】是一个被动特权凭证，只需要放在背包中即可生效，无需使用。\n";
         return ss.str(); // Don't remove it from backpack
 
+    } else if (AchievementItem* ach = dynamic_cast<AchievementItem*>(raw)) {
+        ss << "【" << ach->getName() << "】是特殊物品，放在背包里作为你实力的证明，无需使用。\n";
+        return ss.str(); // Don't remove it from backpack
+
     } else {
         ss << "使用了【" << raw->getName() << "】，但没有产生特殊效果。\n";
     }

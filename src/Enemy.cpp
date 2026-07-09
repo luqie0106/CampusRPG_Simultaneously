@@ -258,7 +258,7 @@ Enemy Enemy::MidnightNerd() {
 }
 
 Enemy Enemy::ForestMonster1() {
-    Enemy e("树林野犬", 120, 30, 5, 25, 20, 0);
+    Enemy e("树林野兽", 120, 30, 5, 25, 20, 0); // 与任务12"对仓3个树林野兽"匹配
     e.SetDropItem(Food::Pork());
     return e;
 }
@@ -271,7 +271,7 @@ Enemy Enemy::ForestMonster2() {
 
 Enemy Enemy::ForestBoss() {
     // 500 HP, 80 ATK, match JSON
-    Enemy e("小树林霸主", 500, 80, 30, 200, 250, 4.0, 2);
+    Enemy e("树林霸主", 500, 80, 30, 200, 250, 4.0, 2); // 与任务14"对仓1个树林霸主"匹配，去掉“小”
     e.SetDropItem(Equipment::DiamondSword());
     return e;
 }

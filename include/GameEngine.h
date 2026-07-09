@@ -240,6 +240,10 @@ public:
     //   4. 调用 SetSpawnPoint() 设置出生点
     WorldMap& GetWorldMap();
 
+    // ── 【测试专用】快速升到最高等级（由 bool 开关控制） ──────────────
+    // 仅在 m_cheatEnabled == true 时生效；正式发布前设为 false 即可完全关闭
+    bool CheatLevelUp(); // 返回 true=已升级到最高, false=未开启或已是最高级
+
 private:
     GameState                   m_state;
     std::shared_ptr<Character>  m_player;
@@ -265,6 +269,10 @@ private:
 
     // ── 地图系统 ───────────────────────────────────
     WorldMap                    m_worldMap;
+
+    // ── 测试模式开关（问题7）────────────────────────
+    // true = 允许 L 键快捷升级；发布时改为 false 即可彻底关闭
+    bool                        m_cheatEnabled = true;
 
     // 内部辅助：战斗
     std::string _EnemyTurn();

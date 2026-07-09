@@ -288,6 +288,12 @@ QString BackpackWindow::getImagePath(const QString& itemName) {
     if (itemName.contains("钻石护腿") || itemName.contains("Diamond Leggings")) return base + "diamond_leggings.png";
     if (itemName.contains("钻石靴") || itemName.contains("Diamond Boots")) return base + "diamond_boots.png";
 
+    // Achievement Items
+    if (itemName.contains("钥匙") || itemName.contains("Key")) return base + "key.png";
+    if (itemName.contains("手机") || itemName.contains("Phone")) return base + "phone.png";
+    if (itemName.contains("哨子") || itemName.contains("Whistle")) return base + "whistle.png";
+    if (itemName.contains("毕业证") || itemName.contains("Diploma")) return base + "diploma.png";
+
     return base + "items.png";
 }
 

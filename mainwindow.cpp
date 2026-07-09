@@ -253,30 +253,15 @@ MainWindow::MainWindow(QWidget *parent)
     moveTimer = new QTimer(this);
     connect(moveTimer, &QTimer::timeout, this, [=, this]()
             {
-                // ── 监听：从战斗回到探索状态，自动开启大地图连续追踪 ─────────────
+                // ── 监听：从战斗回到探索状态，更新追踪面板（但不自动弹出大地图） ──
+                // 修复问题4：之前会自动弹出大地图跳转到追踪目标，干扰玩家操作。
+                // 现在只刷新任务追踪 HUD，玩家可按 J 键手动查看任务/追踪。
                 static GameState lastState = m_engine.GetState();
                 GameState currentState = m_engine.GetState();
 
                 if (lastState == GameState::Battle && currentState == GameState::InGame) {
-                    if (m_trackedTaskId >= 0) {
-                        const auto& tasks = m_engine.GetTaskManager().GetTasks();
-                        for (const auto& t : tasks) {
-                            if (t->id == m_trackedTaskId && t->status == TaskStatus::InProgress) {
-                                bool hasMoreMonsters = false;
-                                for (const auto& obj : t->objectives) {
-                                    if (obj.type == TaskType::KillEnemy && !obj.isComplete()) {
-                                        hasMoreMonsters = true;
-                                        break;
-                                    }
-                                }
-                                if (hasMoreMonsters) {
-                                    // 延时 500ms 自动打开大地图继续追踪下一个怪（给玩家喘息时间）
-                                    QTimer::singleShot(500, this, [this](){ openBigMap(); });
-                                }
-                                break;
-                            }
-                        }
-                    }
+                    // 战斗结束后刷新追踪面板，显示最新任务进度
+                    _updateTrackedTaskHUD();
                 }
                 lastState = currentState;
 
@@ -714,6 +699,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_A: keyA = true; break;
     case Qt::Key_S: keyS = true; break;
     case Qt::Key_D: keyD = true; break;
+    case Qt::Key_L: {
+        // ── 测试专用：L 键快捷升到最高等级（问题7） ──────────────────
+        if (m_engine.CheatLevelUp()) {
+            updateEquipmentUI();
+            QMessageBox::information(this, "🎉 快捷升级",
+                QString("已升到最高等级 %1 级！\n生命值已回满。")
+                    .arg(m_engine.GetPlayerLevel()));
+        }
+        break;
+    }
     case Qt::Key_T:
         currentCharacter = (currentCharacter + 1) % 3;
         player->setPixmap(playerFrames[currentCharacter][3]); // 切换后默认朝下
@@ -782,6 +777,24 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
                 std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                 qDebug() << "Interaction result:" << QString::fromStdString(result);
+
+                // ── 问题6修复：拾取物品后立即删除场景中的图形对象，并清空交互框 ──
+                if (info.defaultInteraction == InteractionType::PickUpItem) {
+                    // 删除对应的场景图形对象
+                    if (interactableGraphics.contains(info.id)) {
+                        QGraphicsItem* gItem = interactableGraphics[info.id];
+                        mapScene->removeItem(gItem);
+                        delete gItem;
+                        interactableGraphics.remove(info.id);
+                    }
+                    // 立即强制清空交互列表，隐藏交互框
+                    currentInteractables.clear();
+                    interactionWidget->hide();
+                    this->setFocus();
+                    // 显示拾取结果
+                    QMessageBox::information(this, "拾取", QString::fromStdString(result));
+                    break;
+                }
 
                 if (info.defaultInteraction == InteractionType::TalkToNPC) {
                     QMessageBox msgBox(this);
