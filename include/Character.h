@@ -87,6 +87,7 @@ public:
     double GetDodgeRate()       const;  // 闪避率
     double GetStaggerPoint()    const;  // 玩家破韧值（现为浮点数）
     int    GetFoodBuffAtk()     const;  // 当前食物攻击加成（0=无 buff）
+    int    GetFoodBuffDef()     const;  // 当前食物防御加成（0=无 buff）
     int    GetFoodBuffRoundsLeft() const; // 食物 buff 剩余回合数
 
     // ── 状态效果 ──────────────────

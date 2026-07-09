@@ -159,6 +159,7 @@ double Character::GetDodgeRate() const {
 }
 double Character::GetStaggerPoint()      const { return StaggerPoint; }
 int    Character::GetFoodBuffAtk()       const { return foodBuffAtk; }
+int    Character::GetFoodBuffDef()       const { return foodBuffDef; }
 int    Character::GetFoodBuffRoundsLeft() const { return foodBuffRoundsLeft; }
 
 // ── 状态效果 ────────────────────────────────────────────────────────────
