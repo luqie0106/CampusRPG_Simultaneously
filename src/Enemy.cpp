@@ -98,106 +98,6 @@ std::string Enemy::Attack(Character& target) {
         partName = "身体";
     } else if (roll <= 90) {
         targetSlot = EquipSlot::Legs;
-#include "Common.h"
-
-#include "../include/Enemy.h"
-#include "../include/Character.h"
-#include "../include/RNG.h"
-// maxStaggerPoints 传 0 即为无韧度小怪；staggerDuration 为 Boss 瘫痪回合数
-Enemy::Enemy(std::string name, int health, int attack, int defense, int exp, int gold,
-    double maxStaggerPoints, int staggerDuration,
-    StatusEffectType debuffType, int debuffChance, int debuffValue, int debuffDuration) :
-name(name), maxHealth(health), health(health), attack(attack), defense(defense), exp(exp), gold(gold),
-maxStaggerPoints(maxStaggerPoints), currentStaggerPoints(maxStaggerPoints),
-staggerDuration(staggerDuration), isStaggered(false), staggerRoundsLeft(0),
-m_debuffType(debuffType), m_debuffChance(debuffChance),
-m_debuffValue(debuffValue), m_debuffDuration(debuffDuration) {}
-
-// ── 状态显示 ──────────────────────────────────────────────────────
-std::string Enemy::DisplayStatus() const {
-    std::stringstream ss;
-    ss << "敌人信息：\n";
-    ss << "名字：" << name << "\n";
-    ss << "生命值：" << health << "\n";
-    ss << "攻击力：" << attack << "\n";
-    ss << "防御力：" << defense << "\n";
-    ss << "经验值：" << exp << "\n";
-    ss << "金币：" << gold << "\n";
-
-    // 只有 Boss（maxStaggerPoints > 0）才显示韧度条
-    if (maxStaggerPoints > 0) {
-        ss << "韧性值：" << currentStaggerPoints << "/" << maxStaggerPoints << "\n";
-    }
-
-    if (isStaggered) {
-        ss << "状态：💥 瘫痪中（剩余 " << staggerRoundsLeft << " 回合）\n";
-    } else {
-        ss << "状态：正常\n";
-    }
-    return ss.str();
-}
-
-// ── 基础属性 ──────────────────────────────────────────────────────
-int Enemy::GetMaxHealth() const {
-    return maxHealth;
-}
-
-int Enemy::GetHealth() const {
-    return health;
-}
-
-std::string Enemy::GetName() const {
-    return name;
-}
-
-double Enemy::GetMaxStaggerPoints() const {
-    return maxStaggerPoints;
-}
-
-double Enemy::GetCurrentStaggerPoints() const {
-    return currentStaggerPoints;
-}
-int  Enemy::GetAttack()  const { return attack; }
-int  Enemy::GetDefense() const { return defense; }
-int  Enemy::GetExp()     const { return exp; }
-int  Enemy::GetGold()    const { return gold; }
-
-std::shared_ptr<Item> Enemy::GetDropItem() const { return dropItem; }
-void Enemy::SetDropItem(std::shared_ptr<Item> item) { dropItem = item; }
-
-bool Enemy::IsStaggered() const { return isStaggered; }
-
-void Enemy::TakeDamage(int damage) {
-    health -= damage;
-}
-
-std::string Enemy::Attack(Character& target) {
-    if (isStaggered) {
-        return name + " 处于瘫痪状态，无法攻击！\n";
-    }
-
-    // ── 闪避判定（优先于部位抽取）────────────────────────────────
-    // RandInt(0, 99) / 100.0 ∈ [0.00, 0.99]，与 GetDodgeRate() ∈ [0.0, 0.95] 比较
-    double dodgeRoll = RNG::RandInt(0, 99) / 100.0;
-    if (dodgeRoll < target.GetDodgeRate()) {
-        return target.GetName() + " 闪避了攻击！\n";
-    }
-
-    // 部位抽取：用全局 RNG 替换原来的局部 mt19937
-    int roll = RNG::RandInt(1, 100);
-
-    EquipSlot targetSlot;
-    std::string partName;
-
-    // 10% 头部，50% 身体，30% 腿部，10% 足部
-    if (roll <= 10) {
-        targetSlot = EquipSlot::Head;
-        partName = "头部";
-    } else if (roll <= 60) {
-        targetSlot = EquipSlot::Body;
-        partName = "身体";
-    } else if (roll <= 90) {
-        targetSlot = EquipSlot::Legs;
         partName = "腿部";
     } else {
         targetSlot = EquipSlot::Feet;
@@ -210,8 +110,7 @@ std::string Enemy::Attack(Character& target) {
         partDef = partArmor->GetDefenseBonus();
     }
 
-    // 考虑到食物的全局防御 buff 加成
-    int overallDefense = target.GetBaseDefense() + target.GetFoodBuffDef() + partDef;
+    int overallDefense = target.GetBaseDefense() + partDef;
     int actualDamage = attack - overallDefense;
     if (actualDamage < 1) actualDamage = 1;
 
@@ -313,7 +212,7 @@ Enemy Enemy::GangMember() {
 // 教导主任：雷厉风行，但只要破韧就能让他停顿一拍（1 回合）
 Enemy Enemy::DeanOfStudents() {
     //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪  debuffType                  概率  每回合量  回合
-    Enemy boss("教导主任",         500,  18,  4,  30,  50,    5,   1,
+    Enemy boss("教导主任",         500,  25,  4,  30,  50,    5,   1,
                  StatusEffectType::Wither,   40,   5,          2);
     boss.SetDropItem(AchievementItem::ConfiscatedPhone());
     return boss;
@@ -321,7 +220,7 @@ Enemy Enemy::DeanOfStudents() {
 
 // 体育委员长：力量型 Boss，体力充沛；破韧后喘息 2 回合
 Enemy Enemy::PECommittee() {
-    Enemy boss("体育委员长",       800,  24,  6,  55,  80,    8,   2,
+    Enemy boss("体育委员长",       800,  35,  6,  55,  80,    8,   2,
                  StatusEffectType::Weakness, 60,   8,          2);
     boss.SetDropItem(AchievementItem::Whistle());
     return boss;
@@ -329,7 +228,7 @@ Enemy Enemy::PECommittee() {
 
 // 校长：终极 Boss，防御极高；破韧后陷入长达 3 回合的混乱
 Enemy Enemy::Principal() {
-    Enemy boss("校长",            1200,  30, 10, 100, 200,   12,   3,
+    Enemy boss("校长",            1200,  45, 10, 100, 200,   12,   3,
                  StatusEffectType::Poison,   75,   8,          3);
     boss.SetDropItem(AchievementItem::Diploma());
     return boss;
@@ -344,7 +243,7 @@ Enemy Enemy::Principal() {
 // 击杀奖励：EXP=80 GOLD=120（约为白天 Boss 的 2~3 倍）
 Enemy Enemy::DormGuard() {
     //               名字           HP  ATK DEF  EXP  GOLD  韧度  瘫痪  debuffType                概率  每回合量  回合
-    Enemy boss("宿管阿姨",         600,  22,  15,  80,  120,   10,   2,
+    Enemy boss("宿管阿姨",         600,  30,  15,  80,  120,   10,   2,
                  StatusEffectType::Wither,   60,   8,          2);
     boss.SetDropItem(AchievementItem::MasterKey());
     return boss;
@@ -355,7 +254,7 @@ Enemy Enemy::DormGuard() {
 // EXP=150 GOLD=200（击杀收益远超白天）
 Enemy Enemy::MidnightNerd() {
     //               名字             HP  ATK DEF  EXP  GOLD  韧度  瘫痪（小怪无意义）
-    return Enemy("午夜卷王幽灵",       120,  40,   2, 150,  200,    0,   0);
+    return Enemy("午夜卷王幽灵",       120,  60,   2, 150,  200,    0,   0);
 }
 
 Enemy Enemy::ForestMonster1() {
@@ -371,8 +270,8 @@ Enemy Enemy::ForestMonster2() {
 }
 
 Enemy Enemy::ForestBoss() {
-    // 500 HP, 45 ATK, match JSON
-    Enemy e("树林霸主", 500, 45, 30, 200, 250, 4.0, 2); // 与任务14"对仓1个树林霸主"匹配，去掉“小”
+    // 500 HP, 80 ATK, match JSON
+    Enemy e("树林霸主", 500, 80, 30, 200, 250, 4.0, 2); // 与任务14"对仓1个树林霸主"匹配，去掉“小”
     e.SetDropItem(Equipment::DiamondSword());
     return e;
 }
