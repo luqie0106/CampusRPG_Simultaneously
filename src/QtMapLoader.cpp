@@ -73,6 +73,7 @@ static void initEntitySpriteCache() {
     loadSpriteSheet(202, "character_20_frame32x32.png"); // 体育委员长 PECommittee
     loadSpriteSheet(203, "character_23_frame32x32.png"); // 校长 Principal
     loadSpriteSheet(204, "character_5_frame32x32.png");  // 宿管阿姨 DormGuard
+    loadSpriteSheet(205, "character_18_frame32x32.png"); // 教导主任 DeanOfStudents
 
     // ── NPC 贴图注册（500-599 段为 NPC 专用） ────────────────────
     loadSpriteSheet(500, "character_32_frame32x32.png"); // 办公室 王老师
@@ -202,6 +203,7 @@ static void parseObjectGroup(const QJsonObject& layerObj,
                     case 202: tpl = Enemy::PECommittee();    break;
                     case 203: tpl = Enemy::Principal();      break;
                     case 204: tpl = Enemy::DormGuard();      break;
+                    case 205: tpl = Enemy::DeanOfStudents(); break;
                     default:  tpl = Enemy::DormGuard();      break;
                 }
             } else {

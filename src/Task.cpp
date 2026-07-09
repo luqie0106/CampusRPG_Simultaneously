@@ -105,9 +105,9 @@ void TaskManager::InitTasks() {
     t10->minLevel = 5;
     tasks.push_back(t10);
 
-    // 11. 小明 - 对付5个告夜卷王幽灵
-    auto t11 = std::make_shared<Task>(11, "对付5个告夜卷王幽灵", "小明", 0, 100, std::vector<std::shared_ptr<Item>>{Medicine::HealingPotion(), StatBoostItem::DefensePotion()});
-    t11->AddObjective(TaskType::KillEnemy, "告夜卷王幽灵", 5);
+    // 11. 小明 - 对付5个午夜卷王幽灵
+    auto t11 = std::make_shared<Task>(11, "对付5个午夜卷王幽灵", "小明", 0, 100, std::vector<std::shared_ptr<Item>>{Medicine::HealingPotion(), StatBoostItem::DefensePotion()});
+    t11->AddObjective(TaskType::KillEnemy, "午夜卷王幽灵", 5);
     tasks.push_back(t11);
 
     // 12. 小华 - 对付3个树林野兽
@@ -148,9 +148,9 @@ void TaskManager::InitTasks() {
     t18->AddObjective(TaskType::BuyItem, "铁剑", 1);
     tasks.push_back(t18);
 
-    // 19. 商人 - 对付5个告夜卷王幽灵 和 5个幽暗黑影
-    auto t19 = std::make_shared<Task>(19, "对付5个告夜卷王幽灵和5个幽暗黑影", "商人", 500, 200, std::vector<std::shared_ptr<Item>>{CouponItem::ShopDiscountCoupon()});
-    t19->AddObjective(TaskType::KillEnemy, "告夜卷王幽灵", 5);
+    // 19. 商人 - 对付5个午夜卷王幽灵 和 5个幽暗黑影
+    auto t19 = std::make_shared<Task>(19, "对付5个午夜卷王幽灵和5个幽暗黑影", "商人", 500, 200, std::vector<std::shared_ptr<Item>>{CouponItem::ShopDiscountCoupon()});
+    t19->AddObjective(TaskType::KillEnemy, "午夜卷王幽灵", 5);
     t19->AddObjective(TaskType::KillEnemy, "幽暗黑影", 5);
     tasks.push_back(t19);
 
