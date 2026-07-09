@@ -110,7 +110,7 @@ std::string Enemy::Attack(Character& target) {
         partDef = partArmor->GetDefenseBonus();
     }
 
-    int overallDefense = target.GetBaseDefense() + partDef;
+    int overallDefense = target.GetBaseDefense() + target.GetFoodBuffDef() + partDef;
     int actualDamage = attack - overallDefense;
     if (actualDamage < 1) actualDamage = 1;
 
@@ -212,7 +212,7 @@ Enemy Enemy::GangMember() {
 // 教导主任：雷厉风行，但只要破韧就能让他停顿一拍（1 回合）
 Enemy Enemy::DeanOfStudents() {
     //               名字          HP  ATK DEF  EXP GOLD  韧度  瘫痪  debuffType                  概率  每回合量  回合
-    Enemy boss("教导主任",         500,  25,  4,  30,  50,    5,   1,
+    Enemy boss("教导主任",         500,  18,  4,  30,  50,    5,   1,
                  StatusEffectType::Wither,   40,   5,          2);
     boss.SetDropItem(AchievementItem::ConfiscatedPhone());
     return boss;
@@ -220,7 +220,7 @@ Enemy Enemy::DeanOfStudents() {
 
 // 体育委员长：力量型 Boss，体力充沛；破韧后喘息 2 回合
 Enemy Enemy::PECommittee() {
-    Enemy boss("体育委员长",       800,  35,  6,  55,  80,    8,   2,
+    Enemy boss("体育委员长",       800,  24,  6,  55,  80,    8,   2,
                  StatusEffectType::Weakness, 60,   8,          2);
     boss.SetDropItem(AchievementItem::Whistle());
     return boss;
@@ -228,7 +228,7 @@ Enemy Enemy::PECommittee() {
 
 // 校长：终极 Boss，防御极高；破韧后陷入长达 3 回合的混乱
 Enemy Enemy::Principal() {
-    Enemy boss("校长",            1200,  45, 10, 100, 200,   12,   3,
+    Enemy boss("校长",            1200,  30, 10, 100, 200,   12,   3,
                  StatusEffectType::Poison,   75,   8,          3);
     boss.SetDropItem(AchievementItem::Diploma());
     return boss;
@@ -243,7 +243,7 @@ Enemy Enemy::Principal() {
 // 击杀奖励：EXP=80 GOLD=120（约为白天 Boss 的 2~3 倍）
 Enemy Enemy::DormGuard() {
     //               名字           HP  ATK DEF  EXP  GOLD  韧度  瘫痪  debuffType                概率  每回合量  回合
-    Enemy boss("宿管阿姨",         600,  30,  15,  80,  120,   10,   2,
+    Enemy boss("宿管阿姨",         600,  22,  15,  80,  120,   10,   2,
                  StatusEffectType::Wither,   60,   8,          2);
     boss.SetDropItem(AchievementItem::MasterKey());
     return boss;
@@ -254,7 +254,7 @@ Enemy Enemy::DormGuard() {
 // EXP=150 GOLD=200（击杀收益远超白天）
 Enemy Enemy::MidnightNerd() {
     //               名字             HP  ATK DEF  EXP  GOLD  韧度  瘫痪（小怪无意义）
-    return Enemy("午夜卷王幽灵",       120,  60,   2, 150,  200,    0,   0);
+    return Enemy("午夜卷王幽灵",       120,  40,   2, 150,  200,    0,   0);
 }
 
 Enemy Enemy::ForestMonster1() {
@@ -271,7 +271,7 @@ Enemy Enemy::ForestMonster2() {
 
 Enemy Enemy::ForestBoss() {
     // 500 HP, 80 ATK, match JSON
-    Enemy e("树林霸主", 500, 80, 30, 200, 250, 4.0, 2); // 与任务14"对仓1个树林霸主"匹配，去掉“小”
+    Enemy e("树林霸主", 500, 45, 30, 200, 250, 4.0, 2); // 与任务14"对仓1个树林霸主"匹配，去掉“小”
     e.SetDropItem(Equipment::DiamondSword());
     return e;
 }
