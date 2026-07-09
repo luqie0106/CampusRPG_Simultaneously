@@ -214,7 +214,7 @@
                         {
                          "name":"atk",
                          "type":"int",
-                         "value":80
+                         "value":60
                         }, 
                         {
                          "name":"hp",
