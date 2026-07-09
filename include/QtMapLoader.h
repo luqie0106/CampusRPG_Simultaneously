@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "WorldMap.h"
-#include <array>
 
 class QtMapLoader {
 public:

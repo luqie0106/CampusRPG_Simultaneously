@@ -27,9 +27,9 @@ public:
 
     // 保存玩家存档（包含坐标和时间）
     // 调用前需保证 initDatabase() 已成功执行
-    bool savePlayer(const Character& player, const GamePoint& pos, const GameTime& time);
+    bool savePlayer(const Character& player, const GamePoint& pos, const GameTime& time, const std::string& tasksJson);
 
     // 读取最新存档
     // 自动根据数据库中的 classType 构造对应职业的角色实例，并恢复坐标和时间
-    bool loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& outPos, GameTime& outTime);
+    bool loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& outPos, GameTime& outTime, std::string& outTasksJson);
 };

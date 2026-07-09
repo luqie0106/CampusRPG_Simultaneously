@@ -312,7 +312,7 @@ std::string GameEngine::SaveGame() {
     try {
         SaveSys saver;
         saver.initDatabase();
-        saver.savePlayer(*m_player, m_worldMap.GetPlayerPos(), m_clock.GetTime());
+        saver.savePlayer(*m_player, m_worldMap.GetPlayerPos(), m_clock.GetTime(), m_taskManager.SerializeTasks());
         return "存档成功！(" + m_player->GetName() + ")\n";
     } catch (const std::exception& e) {
         return std::string("存档失败：") + e.what() + "\n";
@@ -327,7 +327,10 @@ std::string GameEngine::LoadGame() {
         std::shared_ptr<Character> loadedPlayer;
         GamePoint pos;
         GameTime time;
-        if (saver.loadLatestSave(loadedPlayer, pos, time)) {
+        std::string tasksJson;
+        if (saver.loadLatestSave(loadedPlayer, pos, time, tasksJson)) {
+            m_taskManager.InitTasks(); // 先重置所有任务
+            m_taskManager.DeserializeTasks(tasksJson); // 再注入存档状态
             m_player = loadedPlayer;
             m_worldMap.SetPlayerPos(pos);
             m_clock.SetTime(time);

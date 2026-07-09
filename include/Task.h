@@ -1,8 +1,5 @@
 #pragma once
 #include "Common.h"
-#include <string>
-#include <vector>
-#include <memory>
 #include "Item.h"
 
 class Character;
@@ -61,6 +58,9 @@ private:
 public:
     TaskManager();
     void InitTasks();
+
+    std::string SerializeTasks() const;
+    void DeserializeTasks(const std::string& jsonStr);
 
     void OnEnemyKilled(const std::string& enemyName);
     void OnItemBought(const std::string& itemName, bool isHealItem);

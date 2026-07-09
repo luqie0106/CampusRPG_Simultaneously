@@ -67,3 +67,17 @@
 #include <QLineEdit>
 #include <QProgressBar>
 #include <QRadioButton>
+
+// Auto-extracted Standard Libraries
+#include <QFrame>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsOpacityEffect>
+#include <QGraphicsSceneEvent>
+#include <QPainter>
+#include <QPauseAnimation>
+#include <QPropertyAnimation>
+#include <QRegularExpression>
+#include <QSequentialAnimationGroup>
+#include <QXmlStreamReader>
+#include <array>
+#include <set>

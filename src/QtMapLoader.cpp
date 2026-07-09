@@ -1,10 +1,6 @@
 #include "Common.h"
 #include "QtMapLoader.h"
 #include "Enemy.h"
-#include <QXmlStreamReader>
-#include <QFileInfo>
-#include <QRegularExpression>
-#include <array>
 
 
 // ─────────────────────────────────────────────────────────────────────────────

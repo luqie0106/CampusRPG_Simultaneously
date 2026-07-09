@@ -49,6 +49,7 @@ bool SaveSys::initDatabase() {
         "  maxHealth      INTEGER NOT NULL DEFAULT 20, "
         "  gold           INTEGER NOT NULL DEFAULT 200, "
         "  inventory_json TEXT    NOT NULL DEFAULT '{}', "  // JSON 字符串，默认空对象
+        "  tasks_json     TEXT    NOT NULL DEFAULT '[]', " // <== 新增
         "  posX           INTEGER NOT NULL DEFAULT 0, "
         "  posY           INTEGER NOT NULL DEFAULT 0, "
         "  timeDay        INTEGER NOT NULL DEFAULT 1, "
@@ -236,7 +237,7 @@ void SaveSys::deserializeInventory(const QString& json, Character& player) {
 // ─────────────────────────────────────────────────────────────────────────────
 // savePlayer：将玩家全量状态写入数据库（INSERT OR REPLACE）
 // ─────────────────────────────────────────────────────────────────────────────
-bool SaveSys::savePlayer(const Character& player, const GamePoint& pos, const GameTime& time) {
+bool SaveSys::savePlayer(const Character& player, const GamePoint& pos, const GameTime& time, const std::string& tasksJson) {
     if (!db.isOpen() && !db.open()) {
         throw GameException("存档失败：数据库未打开。");
     }
@@ -247,8 +248,8 @@ bool SaveSys::savePlayer(const Character& player, const GamePoint& pos, const Ga
     // INSERT OR REPLACE 利用 name UNIQUE 约束，实现"有则覆盖，无则新增"
     query.prepare(
         "INSERT OR REPLACE INTO player "
-        "(name, classType, level, exp, hp, maxHealth, gold, inventory_json, posX, posY, timeDay, timeHour, timeMinute) "
-        "VALUES (:name, :classType, :level, :exp, :hp, :maxHealth, :gold, :inv, :posX, :posY, :timeDay, :timeHour, :timeMinute);"
+        "(name, classType, level, exp, hp, maxHealth, gold, inventory_json, tasks_json, posX, posY, timeDay, timeHour, timeMinute) "
+        "VALUES (:name, :classType, :level, :exp, :hp, :maxHealth, :gold, :inv, :tasks, :posX, :posY, :timeDay, :timeHour, :timeMinute);"
     );
     query.bindValue(":name",      QString::fromStdString(player.GetName()));
     query.bindValue(":classType", static_cast<int>(player.GetClass()));
@@ -258,6 +259,7 @@ bool SaveSys::savePlayer(const Character& player, const GamePoint& pos, const Ga
     query.bindValue(":maxHealth", player.GetMaxHealth());
     query.bindValue(":gold",      player.GetGold());
     query.bindValue(":inv",       inventoryJson);
+    query.bindValue(":tasks",     QString::fromStdString(tasksJson));
     query.bindValue(":posX",      pos.x);
     query.bindValue(":posY",      pos.y);
     query.bindValue(":timeDay",   time.Day);
@@ -278,7 +280,7 @@ bool SaveSys::savePlayer(const Character& player, const GamePoint& pos, const Ga
 // 调用方须在调用前按 classType 构造正确子类（Steve/Athlete/Nerd），
 // 本函数只负责覆盖 level/exp/hp/gold/inventory 等可序列化字段。
 // ─────────────────────────────────────────────────────────────────────────────
-bool SaveSys::loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& outPos, GameTime& outTime) {
+bool SaveSys::loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& outPos, GameTime& outTime, std::string& outTasksJson) {
     if (!db.isOpen() && !db.open()) {
         throw GameException("读档失败：数据库未打开。");
     }
@@ -286,7 +288,7 @@ bool SaveSys::loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& o
     QSqlQuery query(db);
     // 取出最新的存档
     query.prepare(
-        "SELECT name, classType, level, exp, hp, maxHealth, gold, inventory_json, "
+        "SELECT name, classType, level, exp, hp, maxHealth, gold, inventory_json, tasks_json, "
         "posX, posY, timeDay, timeHour, timeMinute "
         "FROM player ORDER BY id DESC LIMIT 1;"
     );
@@ -332,6 +334,7 @@ bool SaveSys::loadLatestSave(std::shared_ptr<Character>& outPlayer, GamePoint& o
 
     // ── 3. 还原背包 + 装备 ────────────────────────────────────────────
     deserializeInventory(query.value("inventory_json").toString(), *outPlayer);
+    outTasksJson = query.value("tasks_json").toString().toStdString();
 
     // ── 4. 还原位置和时间 ────────────────────────────────────────────
     outPos.x = query.value("posX").toInt();

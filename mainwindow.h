@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "GameEngine.h"
-#include <queue>
 
 class ShopWindow;
 class BackpackWindow;

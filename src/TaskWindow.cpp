@@ -1,11 +1,5 @@
+#include "Common.h"
 #include "../include/TaskWindow.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QScrollArea>
-#include <QFrame>
-#include <QPushButton>
-#include <QKeyEvent>
 
 TaskWindow::TaskWindow(GameEngine *engine, QWidget *parent)
     : QWidget(parent), m_engine(engine) {

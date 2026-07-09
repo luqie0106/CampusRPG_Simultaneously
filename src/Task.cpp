@@ -1,7 +1,7 @@
+#include "Common.h"
 #include "../include/Task.h"
 #include "../include/Character.h"
 #include "../include/Item.h"
-#include <sstream>
 
 Task::Task(int id, std::string desc, std::string npc, int gold, int exp, std::vector<std::shared_ptr<Item>> items)
     : id(id), description(desc), submitNPC(npc), status(TaskStatus::NotStarted),
@@ -228,4 +228,43 @@ std::string TaskManager::GetNPCInteractionText(const std::string& npcName, Chara
     }
 
     return ss.str();
+}
+
+std::string TaskManager::SerializeTasks() const {
+    QJsonArray taskArray;
+    for (const auto& task : tasks) {
+        if (task->status == TaskStatus::NotStarted) continue; // 未接取的不用存
+        QJsonObject taskObj;
+        taskObj["id"] = task->id;
+        taskObj["status"] = static_cast<int>(task->status);
+        QJsonArray objArray;
+        for (const auto& obj : task->objectives) {
+            objArray.append(obj.currentAmount);
+        }
+        taskObj["objectives"] = objArray;
+        taskArray.append(taskObj);
+    }
+    return QString(QJsonDocument(taskArray).toJson(QJsonDocument::Compact)).toStdString();
+}
+
+void TaskManager::DeserializeTasks(const std::string& jsonStr) {
+    if (jsonStr.empty()) return;
+    QJsonDocument doc = QJsonDocument::fromJson(QString::fromStdString(jsonStr).toUtf8());
+    if (!doc.isArray()) return;
+    QJsonArray taskArray = doc.array();
+    
+    for (int i = 0; i < taskArray.size(); ++i) {
+        QJsonObject taskObj = taskArray[i].toObject();
+        int id = taskObj["id"].toInt();
+        for (auto& task : tasks) {
+            if (task->id == id) {
+                task->status = static_cast<TaskStatus>(taskObj["status"].toInt());
+                QJsonArray objArray = taskObj["objectives"].toArray();
+                for (int j = 0; j < objArray.size() && j < task->objectives.size(); ++j) {
+                    task->objectives[j].currentAmount = objArray[j].toInt();
+                }
+                break;
+            }
+        }
+    }
 }

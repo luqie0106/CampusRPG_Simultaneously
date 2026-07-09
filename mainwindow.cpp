@@ -7,13 +7,6 @@
 #include "BackpackWindow.h"
 #include "include/TaskWindow.h"
 #include "CharacterSelectDialog.h"
-#include <QPropertyAnimation>
-#include <QGraphicsOpacityEffect>
-#include <QGraphicsEllipseItem>
-#include <QPainter>
-#include <QSequentialAnimationGroup>
-#include <QPauseAnimation>
-#include <set>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -918,6 +911,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         // 大地图的左键点击
         else if (obj == bigMapView->viewport() && mouseEvent->button() == Qt::LeftButton) {
             QPointF scenePos = bigMapView->mapToScene(mouseEvent->pos());
+            // 如果点中的是地图标记圈，放行该事件！
+            QGraphicsItem* itemAt = mapScene->itemAt(scenePos, QTransform());
+            if (itemAt && itemAt->type() == QGraphicsEllipseItem::Type) {
+                return false;
+            }
             int targetX = scenePos.x() / 16.0;
             int targetY = scenePos.y() / 16.0;
 
@@ -1265,7 +1263,6 @@ void MainWindow::_clearMapTrackMarkers() {
 }
 
 // ── 自定义可点击地图标记（局部类，定义在 mainwindow.cpp 内） ─────────────
-#include <QGraphicsSceneEvent>
 namespace {
 
 // 可点击的追踪标记：继承 QGraphicsEllipseItem，右键菜单选择前往/传送
