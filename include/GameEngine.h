@@ -265,6 +265,7 @@ private:
 
     // ── 战斗状态 ───────────────────────────────────
     std::optional<Enemy>        m_currentEnemy;
+    int                         m_currentBattleTargetId = -1; // 当前正在战斗的实体ID
     bool                        m_inBattle = false;
 
     // ── 地图系统 ───────────────────────────────────

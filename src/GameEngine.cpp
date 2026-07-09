@@ -423,6 +423,7 @@ std::string GameEngine::_EnemyTurn() {
             m_inBattle     = false;
             m_currentEnemy = std::nullopt;
             m_state        = GameState::InGame;   // 返回游戏内，不进入 GameOver
+            m_currentBattleTargetId = -1;
             // 复活：血量回满，清除负面状态（等级/经验/金币/背包全部保留）
             m_player->HealHp(m_player->GetMaxHealth());
             m_player->ClearNegativeEffects();
@@ -473,6 +474,11 @@ std::string GameEngine::_SettleVictory() {
 
     if (leveled) {
         ss << "🌟 恭喜升级！当前等级：" << m_player->GetLevel() << "\n";
+    }
+
+    if (m_currentBattleTargetId != -1) {
+        m_worldMap.MarkInteractableDead(m_currentBattleTargetId, GetGameTime().GetTotalMinutes());
+        m_currentBattleTargetId = -1;
     }
 
     m_inBattle     = false;
@@ -606,6 +612,7 @@ std::string GameEngine::BattleFlee() {
     m_currentEnemy = std::nullopt;
     m_player->ClearNegativeEffects();
     m_state        = GameState::InGame;
+    m_currentBattleTargetId = -1;
 
     return "🏃 你选择了逃跑……战斗以失败告终。\n返回游戏主菜单。\n";
 }
@@ -723,19 +730,19 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
                 // 智能兜底：如果实体名字匹配上了特定 Boss，强行注入模板并开战
                 if (info->displayName == "校长") {
                     Enemy boss = Enemy::Principal();
-                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    m_currentBattleTargetId = targetId;
                     return StartBattle(boss);
                 } else if (info->displayName == "教导主任") {
                     Enemy boss = Enemy::DeanOfStudents();
-                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    m_currentBattleTargetId = targetId;
                     return StartBattle(boss);
                 } else if (info->displayName == "体育委员长") {
                     Enemy boss = Enemy::PECommittee();
-                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    m_currentBattleTargetId = targetId;
                     return StartBattle(boss);
                 } else if (info->displayName == "宿管阿姨") {
                     Enemy boss = Enemy::DormGuard();
-                    m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+                    m_currentBattleTargetId = targetId;
                     return StartBattle(boss);
                 }
                 return "错误：该实体未绑定敌人模板，无法开始战斗。\n";
@@ -743,7 +750,7 @@ std::string GameEngine::ExecuteInteraction(InteractionType type, int targetId) {
             // 战斗一旦触发，将实体从地图移除（战斗结束前不再显示为可交互）
             // 若战斗胜利则永久移除；若逃跑则已消失（简化设计，可后续扩展为"重置"）
             Enemy enemyCopy = info->enemyTemplate.value();
-            m_worldMap.MarkInteractableDead(targetId, GetGameTime().GetTotalMinutes());
+            m_currentBattleTargetId = targetId;
             return StartBattle(enemyCopy);
         }
 
