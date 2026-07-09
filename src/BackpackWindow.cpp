@@ -176,6 +176,7 @@ void BackpackWindow::refreshBackpack() {
             if (isEquipped) {
                 // 脱下装备：只清除装备槽，物品仍留在背包 items
                 m_engine->GetPlayer()->UnequipItem(equipSlot);
+                m_engine->SaveGame();
                 refreshBackpack();
             } else if (itemIndex > 0) {
                 std::string result;
@@ -184,6 +185,7 @@ void BackpackWindow::refreshBackpack() {
                     emit battleItemUsed(QString::fromStdString(result));
                 } else {
                     result = m_engine->UseBackpackItem(itemIndex);
+                    m_engine->SaveGame();
                     QMessageBox::information(this, "使用物品", QString::fromStdString(result));
                 }
                 refreshBackpack();

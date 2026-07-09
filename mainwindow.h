@@ -122,6 +122,7 @@ private:
     QLabel  *m_newTaskNotifyLabel = nullptr;  // 新任务提示（淡入淡出轮播）
     QLabel  *m_trackedTaskLabel   = nullptr;  // 常驻追踪面板
     QTimer  *m_notifyTimer        = nullptr;  // 提示轮播定时器（2.5s/条）
+    QTimer  *m_autoSaveTimer      = nullptr;  // 5分钟自动存档定时器
     std::queue<QString> m_notifyQueue;        // 待显示的提示文字队列
     int      m_trackedTaskId      = -1;       // 当前追踪任务 ID（-1=无）
 

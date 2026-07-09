@@ -137,6 +137,19 @@ MainWindow::MainWindow(QWidget *parent)
     m_notifyTimer->setInterval(2500);
     connect(m_notifyTimer, &QTimer::timeout, this, &MainWindow::_showNextNotification_slot);
 
+    // 5分钟自动存档兜底
+    m_autoSaveTimer = new QTimer(this);
+    m_autoSaveTimer->setInterval(300000); // 5 minutes = 300,000 ms
+    connect(m_autoSaveTimer, &QTimer::timeout, this, [this]() {
+        if (m_engine.GetState() != GameState::MainMenu && m_engine.GetPlayer()) {
+            std::string log = m_engine.SaveGame();
+            if (log.find("失败") == std::string::npos && log.find("Error") == std::string::npos) {
+                enqueueTaskNotification("💾 自动存档完成");
+            }
+        }
+    });
+    m_autoSaveTimer->start();
+
     battleActions = {"[攻击]", "[使用物品]", "[逃跑]"};
 
     // ========== 初始化游戏引擎 ==========
@@ -1142,6 +1155,11 @@ void MainWindow::updateEntityFacing(int entityId, const QPointF& playerPx) {
 
 // ── 将新任务提示推入队列，若 Timer 未运行则立即触发第一条 ─────────────────────
 void MainWindow::enqueueTaskNotification(const QString& text) {
+    // 核心事件自动存档：接取新任务、完成任务或进度更新时，自动存档（排除自动存档自身的提示）
+    if (text.contains("任务") || text.contains("进度")) {
+        m_engine.SaveGame();
+    }
+
     m_notifyQueue.push(text);
     if (!m_notifyTimer->isActive()) {
         _showNextNotification();  // 立即显示第一条

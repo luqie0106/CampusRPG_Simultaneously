@@ -196,6 +196,9 @@ void ShopWindow::buildUI() {
             } else {
                 result = m_engine->BuyItem(itemIndex + 1);
             }
+            if (result.find("成功") != std::string::npos) {
+                m_engine->SaveGame();
+            }
             QMessageBox::information(this, "购买结果", QString::fromStdString(result));
             refreshShopList();
         });

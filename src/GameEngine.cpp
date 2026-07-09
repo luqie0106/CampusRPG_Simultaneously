@@ -485,6 +485,10 @@ std::string GameEngine::_SettleVictory() {
     m_currentEnemy = std::nullopt;
     m_player->ClearNegativeEffects();
     m_state        = GameState::InGame;
+    
+    // 核心事件自动存档：战斗胜利
+    SaveGame();
+    
     ss << "\n战斗结束，返回游戏主菜单。\n";
     return ss.str();
 }
