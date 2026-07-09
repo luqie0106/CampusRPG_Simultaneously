@@ -289,6 +289,50 @@
         }, 
         {
          "draworder":"topdown",
+         "id":9,
+         "name":"obj_monster",
+         "objects":[
+                {
+                 "height":34,
+                 "id":5,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"atk",
+                         "type":"int",
+                         "value":60
+                        }, 
+                        {
+                         "name":"hp",
+                         "type":"int",
+                         "value":500
+                        }, 
+                        {
+                         "name":"isBoss",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spriteId",
+                         "type":"int",
+                         "value":204
+                        }],
+                 "rotation":0,
+                 "type":"Monster",
+                 "visible":true,
+                 "width":32,
+                 "x":478,
+                 "y":782
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":5,
          "name":"obj_NPC",
          "objects":[
@@ -354,8 +398,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":7,
- "nextobjectid":5,
+ "nextlayerid":10,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "properties":[
         {
