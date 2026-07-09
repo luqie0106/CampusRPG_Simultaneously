@@ -43,3 +43,11 @@ CMakeUserPresets.json
 
 *.patch
 *.sh
+
+# Qt Creator raw project files
+campus.cflags
+campus.config
+campus.creator
+campus.cxxflags
+campus.files
+campus.includes
