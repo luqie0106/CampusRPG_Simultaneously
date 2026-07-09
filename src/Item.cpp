@@ -222,9 +222,9 @@ std::shared_ptr<Equipment> Equipment::DiamondBoots() {
 
 // ========== 黑市专属 Equipment 工厂 ==========
 std::shared_ptr<Equipment> Equipment::NightWalkerCloak() {
-    // 夜行衣：防御+5，闪避+40%，耐久 800，身体槽
+    // 夜行衣：防御+5，闪避+60%，耐久 800，身体槽
     //                     name      value  def  atk  dur          slot          dodge
-    return std::make_shared<Equipment>("夜行衣", 500, 5, 0, 800, EquipSlot::Body, 40);
+    return std::make_shared<Equipment>("夜行衣", 500, 5, 0, 800, EquipSlot::Body, 60);
 }
 
 // ========== AchievementItem 实现与工厂 ==========

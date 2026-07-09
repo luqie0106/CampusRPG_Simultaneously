@@ -113,7 +113,9 @@ private:
     // ========== 装备耐久度 UI ==========
     QWidget *equipmentWidget;
     QVBoxLayout *equipmentLayout;
+    QLabel *statLabels[3];
     QLabel *equipLabels[5];
+    QLabel *playerBuffsLabel;
     void updateEquipmentUI();
 
     QLabel *m_gameTimeLabel = nullptr;

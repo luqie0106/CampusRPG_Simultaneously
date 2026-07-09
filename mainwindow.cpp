@@ -60,27 +60,39 @@ MainWindow::MainWindow(QWidget *parent)
     // ========== 战斗 UI ==========
     playerHealthBar = new QProgressBar(this);
     playerHealthBar->setFixedSize(300, 20);
-    playerHealthBar->setTextVisible(false);
+    playerHealthBar->setTextVisible(true);
+    playerHealthBar->setFormat("%v / %m");
+    playerHealthBar->setAlignment(Qt::AlignCenter);
     playerHealthBar->setStyleSheet(
-        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; }"
+        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; color: white; font-weight: bold; text-align: center; }"
         "QProgressBar::chunk { background-color: #4CAF50; border-radius: 5px; }"
     );
     playerHealthBar->show();
 
+    playerBuffsLabel = new QLabel(this);
+    playerBuffsLabel->setStyleSheet("color: #FFD700; font-weight: bold; font-size: 14px; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 5px;");
+    playerBuffsLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+    playerBuffsLabel->setAlignment(Qt::AlignCenter);
+    playerBuffsLabel->hide();
+
     enemyHealthBar = new QProgressBar(this);
     enemyHealthBar->setFixedSize(300, 20);
-    enemyHealthBar->setTextVisible(false);
+    enemyHealthBar->setTextVisible(true);
+    enemyHealthBar->setFormat("%v / %m");
+    enemyHealthBar->setAlignment(Qt::AlignCenter);
     enemyHealthBar->setStyleSheet(
-        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; }"
+        "QProgressBar { border: 1px solid black; border-radius: 5px; background-color: #555555; color: white; font-weight: bold; text-align: center; }"
         "QProgressBar::chunk { background-color: #f44336; border-radius: 5px; }"
     );
     enemyHealthBar->hide();
 
     enemyStaggerBar = new QProgressBar(this);
-    enemyStaggerBar->setFixedSize(300, 10);
-    enemyStaggerBar->setTextVisible(false);
+    enemyStaggerBar->setFixedSize(300, 15);
+    enemyStaggerBar->setTextVisible(true);
+    enemyStaggerBar->setFormat("%v / %m");
+    enemyStaggerBar->setAlignment(Qt::AlignCenter);
     enemyStaggerBar->setStyleSheet(
-        "QProgressBar { border: 1px solid black; border-radius: 3px; background-color: #555555; }"
+        "QProgressBar { border: 1px solid black; border-radius: 3px; background-color: #555555; color: white; font-weight: bold; font-size: 10px; text-align: center; }"
         "QProgressBar::chunk { background-color: #FFEB3B; border-radius: 3px; }"
     );
     enemyStaggerBar->hide();
@@ -89,6 +101,12 @@ MainWindow::MainWindow(QWidget *parent)
     equipmentLayout = new QVBoxLayout(equipmentWidget);
     equipmentLayout->setContentsMargins(10, 10, 10, 10);
     equipmentLayout->setSpacing(5);
+    for (int i = 0; i < 3; ++i) {
+        statLabels[i] = new QLabel(this);
+        statLabels[i]->setStyleSheet("color: #00FFFF; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 4px; font-weight: bold; font-size: 14px;");
+        statLabels[i]->hide();
+        equipmentLayout->addWidget(statLabels[i]);
+    }
     for (int i = 0; i < 5; ++i) {
         equipLabels[i] = new QLabel(this);
         equipLabels[i]->setStyleSheet("color: white; background-color: rgba(0, 0, 0, 150); padding: 5px; border-radius: 4px; font-weight: bold; font-size: 14px;");
@@ -418,6 +436,9 @@ MainWindow::MainWindow(QWidget *parent)
                 
                 // 常驻 UI 跟随
                 playerHealthBar->move(view->width() / 2 - playerHealthBar->width() / 2, view->height() - 30);
+                if (playerBuffsLabel->isVisible()) {
+                    playerBuffsLabel->move(view->width() / 2 - playerBuffsLabel->width() / 2, view->height() - 30 - playerBuffsLabel->height() - 10);
+                }
                 equipmentWidget->move(10, view->height() - equipmentWidget->sizeHint().height() - 40);
                 if (m_gameTimeLabel) {
                     m_gameTimeLabel->setText(QString::fromStdString(m_engine.GetGameTime().ToString()));
@@ -1055,7 +1076,36 @@ void MainWindow::updateEquipmentUI() {
     // Update player health bar
     playerHealthBar->setMaximum(playerChar->GetMaxHealth());
     playerHealthBar->setValue(playerChar->GetHealth());
+
+    // Update stats
+    statLabels[0]->setText(QString("攻击力: %1").arg(playerChar->GetAttack()));
+    statLabels[0]->show();
+    statLabels[1]->setText(QString("防御力: %1").arg(playerChar->GetDefense()));
+    statLabels[1]->show();
+    statLabels[2]->setText(QString("闪避率: %1%").arg((int)(playerChar->GetDodgeRate() * 100)));
+    statLabels[2]->show();
+
+    // Update buffs
+    QString buffText;
+    if (playerChar->GetFoodBuffAtk() > 0) {
+        buffText += QString("攻击加成 +%1 (%2回合) ").arg(playerChar->GetFoodBuffAtk()).arg(playerChar->GetFoodBuffRoundsLeft());
+    }
+    if (playerChar->GetFoodBuffDef() > 0) {
+        buffText += QString("防御加成 +%1 (%2回合) ").arg(playerChar->GetFoodBuffDef()).arg(playerChar->GetFoodBuffRoundsLeft());
+    }
+    QString effectText = QString::fromStdString(playerChar->GetStatusEffectText());
+    if (!effectText.trimmed().isEmpty() && effectText.trimmed() != "无异常状态") {
+        buffText += effectText.trimmed().replace("\n", " | ");
+    }
     
+    if (buffText.trimmed().isEmpty()) {
+        playerBuffsLabel->hide();
+    } else {
+        playerBuffsLabel->setText(buffText.trimmed());
+        playerBuffsLabel->adjustSize();
+        playerBuffsLabel->show();
+    }
+
     EquipSlot eqSlots[] = { EquipSlot::Weapon, EquipSlot::Head, EquipSlot::Body, EquipSlot::Legs, EquipSlot::Feet };
     QString slotNames[] = { "武器", "头盔", "胸甲", "裤腿", "靴子" };
     int labelIdx = 0;
