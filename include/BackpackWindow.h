@@ -14,6 +14,9 @@ public:
 signals:
     void battleItemUsed(const QString& resultLog);
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
 private:
     QString getImagePath(const QString& itemName);
     void buildUI();

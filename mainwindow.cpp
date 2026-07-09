@@ -635,6 +635,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
 
     if (event->key() == Qt::Key_J) {
+        keyW = false; keyA = false; keyS = false; keyD = false;
         if (m_taskWindow == nullptr) {
             m_taskWindow = new TaskWindow(&m_engine, nullptr);
             connect(m_taskWindow, &QObject::destroyed, this, [this]() { m_taskWindow = nullptr; });
@@ -746,6 +747,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
             if (info.defaultInteraction == InteractionType::EnterShop || info.defaultInteraction == InteractionType::EnterBlackMarket) {
                 if (m_shopWindow == nullptr) {
+                    keyW = false; keyA = false; keyS = false; keyD = false;
                     bool isBlackMarket = m_engine.IsNight();
                     m_shopWindow = new ShopWindow(&m_engine, isBlackMarket, this);
                     if (isBlackMarket) {
@@ -758,6 +760,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                     connect(m_shopWindow, &QWidget::destroyed, this, [this]() {
                         m_shopWindow = nullptr;
                         updateEquipmentUI();
+                        if (m_engine.GetState() == GameState::Shop) {
+                            m_engine.SetState(GameState::InGame);
+                        }
                     });
                     if (interactionWidget->isVisible()) {
                         interactionWidget->hide();
@@ -777,6 +782,19 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
                 std::string result = m_engine.ExecuteInteraction(info.defaultInteraction, info.id);
                 qDebug() << "Interaction result:" << QString::fromStdString(result);
+
+                if (info.defaultInteraction == InteractionType::TalkToNPC) {
+                    QMessageBox msgBox(this);
+                    msgBox.setWindowTitle("对话");
+                    msgBox.setText(QString::fromStdString(result));
+                    msgBox.setStyleSheet(
+                        "QMessageBox { background-color: #2c2c2c; }"
+                        "QMessageBox QLabel { color: white; font-size: 16px; min-width: 300px; min-height: 100px; }"
+                        "QPushButton { background-color: #555; color: white; padding: 6px 16px;"
+                        "              border-radius: 4px; font-size: 14px; }"
+                        "QPushButton:hover { background-color: #777; }");
+                    msgBox.exec();
+                }
 
                 if (info.defaultInteraction == InteractionType::StartBattle) {
                     updateBattleUI();
@@ -800,6 +818,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         }
         break;
     case Qt::Key_M:
+        keyW = false; keyA = false; keyS = false; keyD = false;
         if (bigMapView->isVisible()) {
             bigMapView->hide();
         } else {
@@ -810,6 +829,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         }
         break;
     case Qt::Key_B:
+        keyW = false; keyA = false; keyS = false; keyD = false;
         if (m_backpackWindow == nullptr) {
             m_backpackWindow = new BackpackWindow(&m_engine, nullptr);
             connect(m_backpackWindow, &QObject::destroyed, this, [this]() { m_backpackWindow = nullptr; updateEquipmentUI(); });
