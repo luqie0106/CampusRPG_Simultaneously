@@ -181,6 +181,11 @@
                          "name":"isBoss",
                          "type":"bool",
                          "value":true
+                        }, 
+                        {
+                         "name":"spriteId",
+                         "type":"int",
+                         "value":204
                         }],
                  "rotation":0,
                  "type":"Monster",
