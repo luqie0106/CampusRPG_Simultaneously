@@ -185,7 +185,7 @@
                         {
                          "name":"spriteId",
                          "type":"int",
-                         "value":204
+                         "value":205
                         }],
                  "rotation":0,
                  "type":"Monster",
