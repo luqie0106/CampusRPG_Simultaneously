@@ -290,3 +290,11 @@ QString BackpackWindow::getImagePath(const QString& itemName) {
 
     return base + "items.png";
 }
+
+void BackpackWindow::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Escape) {
+        this->close();
+    } else {
+        QWidget::keyPressEvent(event);
+    }
+}

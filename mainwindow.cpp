@@ -761,7 +761,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                         m_shopWindow = nullptr;
                         updateEquipmentUI();
                         if (m_engine.GetState() == GameState::Shop) {
-                            m_engine.SetState(GameState::InGame);
+                            m_engine.LeaveShop();
                         }
                     });
                     if (interactionWidget->isVisible()) {
