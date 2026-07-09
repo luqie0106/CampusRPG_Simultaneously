@@ -264,39 +264,44 @@ QString BackpackWindow::getImagePath(const QString& itemName) {
     QString base = QString(PROJECT_DATA_DIR) + "/items/";
 
     // Food & Potions
-    if (itemName.contains("猪肉") || itemName.contains("Pork")) return base + "porkchop_cooked.png";
+    if (itemName.contains("猪肉") || itemName.contains("猪排") || itemName.contains("Pork")) return base + "porkchop_cooked.png";
     if (itemName.contains("牛排") || itemName.contains("Steak")) return base + "beef_cooked.png";
+    if (itemName.contains("深夜烧烤") || itemName.contains("BBQ")) return base + "mushroom_stew.png";
     if (itemName.contains("金苹果") || itemName.contains("Apple")) return base + "apple_golden.png";
     if (itemName.contains("药水") || itemName.contains("Potion")) return base + "potion_bottle_drinkable.png";
 
     // Iron Equipments
     if (itemName.contains("铁剑") || itemName.contains("Iron Sword")) return base + "iron_sword.png";
     if (itemName.contains("铁头盔") || itemName.contains("Iron Helmet")) return base + "iron_helmet.png";
-    if (itemName.contains("铁胸甲") || itemName.contains("Iron Armor")) return base + "iron_chestplate.png";
+    if (itemName.contains("铁甲") || itemName.contains("铁胸甲") || itemName.contains("Iron Armor")) return base + "iron_chestplate.png";
     if (itemName.contains("铁护腿") || itemName.contains("Iron Leggings")) return base + "iron_leggings.png";
-    if (itemName.contains("铁靴") || itemName.contains("Iron Boots")) return base + "iron_boots.png";
+    if (itemName.contains("铁靴子") || itemName.contains("铁靴") || itemName.contains("Iron Boots")) return base + "iron_boots.png";
 
     // Gold Equipments
     if (itemName.contains("金剑") || itemName.contains("Golden Sword")) return base + "gold_sword.png";
     if (itemName.contains("金头盔") || itemName.contains("Golden Helmet")) return base + "gold_helmet.png";
-    if (itemName.contains("金胸甲") || itemName.contains("Golden Armor")) return base + "gold_chestplate.png";
+    if (itemName.contains("金甲") || itemName.contains("金胸甲") || itemName.contains("Golden Armor")) return base + "gold_chestplate.png";
     if (itemName.contains("金护腿") || itemName.contains("Golden Leggings")) return base + "gold_leggings.png";
-    if (itemName.contains("金靴") || itemName.contains("Golden Boots")) return base + "gold_boots.png";
+    if (itemName.contains("金靴子") || itemName.contains("金靴") || itemName.contains("Golden Boots")) return base + "gold_boots.png";
 
     // Diamond Equipments
     if (itemName.contains("钻石剑") || itemName.contains("Diamond Sword")) return base + "diamond_sword.png";
     if (itemName.contains("钻石头盔") || itemName.contains("Diamond Helmet")) return base + "diamond_helmet.png";
-    if (itemName.contains("钻石胸甲") || itemName.contains("Diamond Armor")) return base + "diamond_chestplate.png";
+    if (itemName.contains("钻石甲") || itemName.contains("钻石胸甲") || itemName.contains("Diamond Armor")) return base + "diamond_chestplate.png";
     if (itemName.contains("钻石护腿") || itemName.contains("Diamond Leggings")) return base + "diamond_leggings.png";
-    if (itemName.contains("钻石靴") || itemName.contains("Diamond Boots")) return base + "diamond_boots.png";
+    if (itemName.contains("钻石靴子") || itemName.contains("钻石靴") || itemName.contains("Diamond Boots")) return base + "diamond_boots.png";
+
+    // Special Equipments & Items
+    if (itemName.contains("夜行衣")) return base + "feather.png";
+    if (itemName.contains("折扣券") || itemName.contains("Coupon")) return base + "paper.png";
 
     // Achievement Items
     if (itemName.contains("钥匙") || itemName.contains("Key")) return base + "key.png";
-    if (itemName.contains("手机") || itemName.contains("Phone")) return base + "phone.png";
-    if (itemName.contains("哨子") || itemName.contains("Whistle")) return base + "whistle.png";
-    if (itemName.contains("毕业证") || itemName.contains("Diploma")) return base + "diploma.png";
+    if (itemName.contains("手机") || itemName.contains("Phone")) return base + "name_tag.png";
+    if (itemName.contains("哨子") || itemName.contains("Whistle")) return base + "gold_nugget.png";
+    if (itemName.contains("毕业证") || itemName.contains("Diploma")) return base + "book_written.png";
 
-    return base + "items.png";
+    return base + "book_normal.png"; // Fallback 改为普通书本，避免变成钻石斧！
 }
 
 void BackpackWindow::keyPressEvent(QKeyEvent *event) {
