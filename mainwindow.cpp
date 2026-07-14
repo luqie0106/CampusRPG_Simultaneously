@@ -301,15 +301,21 @@ MainWindow::MainWindow(QWidget *parent)
                 m_engine.GetWorldMap().RespawnDeadMonsters(currentMins);
 
                 // 2. 刷新所有实体的显示状态（夜间隐藏、假死隐藏）
+                // 注意：GameClock 后台线程可能同时执行 RemoveInteractable，
+                // GetInteractableById 内部加锁，返回指针后需立即使用（复制数据），
+                // 不可跨帧持有，此处调用安全（getById 内有 lock_guard）。
                 bool isNight = m_engine.IsNight();
                 for (auto it = interactableGraphics.constBegin(); it != interactableGraphics.constEnd(); ++it) {
                     const auto* info = m_engine.GetWorldMap().GetInteractableById(it.key());
-                    if (info) {
-                        bool visible = true;
-                        if (info->isNightOnly && !isNight) visible = false;
-                        if (info->isDead) visible = false;   // 假死的怪物贴图不可见
-                        it.value()->setVisible(visible);
+                    if (!info) {
+                        // 实体已被后台线程（昼夜切换）移除，隐藏对应图形
+                        it.value()->setVisible(false);
+                        continue;
                     }
+                    bool visible = true;
+                    if (info->isNightOnly && !isNight) visible = false;
+                    if (info->isDead) visible = false;   // 假死的怪物贴图不可见
+                    it.value()->setVisible(visible);
                 }
 
                 int dx = 0;
@@ -688,8 +694,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             m_shopWindow->close();
             closedSomething = true;
         }
-        if (m_backpackWindow != nullptr && m_backpackWindow->isVisible()) {
-            m_backpackWindow->hide();
+        if (m_backpackWindow != nullptr) {
+            m_backpackWindow->close(); // close() 触发 WA_DeleteOnClose，自动清空指针
             return;
         }
         if (m_taskWindow != nullptr && m_taskWindow->isVisible()) {
@@ -716,6 +722,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                 connect(m_backpackWindow, &QObject::destroyed, this, [this]() { m_backpackWindow = nullptr; updateEquipmentUI(); });
                 m_backpackWindow->show();
             } else {
+                // 窗口对象仍存在，确保重新显示（可能因 hide 而不可见）
+                m_backpackWindow->show();
                 m_backpackWindow->raise();
                 m_backpackWindow->activateWindow();
             }
@@ -882,6 +890,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             connect(m_backpackWindow, &QObject::destroyed, this, [this]() { m_backpackWindow = nullptr; updateEquipmentUI(); });
             m_backpackWindow->show();
         } else {
+            // 窗口对象仍存在，确保重新显示（可能因 hide 而不可见）
+            m_backpackWindow->show();
             m_backpackWindow->raise();
             m_backpackWindow->activateWindow();
         }
@@ -1168,33 +1178,36 @@ void MainWindow::updateEntityFacing(int entityId, const QPointF& playerPx) {
         bool isBoss = item->data(2).toBool();
         int w = pixItem->pixmap().width();
         int h = pixItem->pixmap().height();
+        // 防御性检查：pixmap 尺寸为 0 时 QPainter 会崩溃，直接跳过绘制
+        if (w <= 0 || h <= 0) return;
         QPixmap newPix(w, h);
         newPix.fill(Qt::transparent);
-        QPainter p(&newPix);
-        p.fillRect(0, 0, w, h, QColor(isBoss ? 128 : 255, 0, isBoss ? 128 : 0, 200));
+        {
+            QPainter p(&newPix);
+            p.fillRect(0, 0, w, h, QColor(isBoss ? 128 : 255, 0, isBoss ? 128 : 0, 200));
 
-        p.setBrush(Qt::black);
-        p.setPen(Qt::NoPen);
+            p.setBrush(Qt::black);
+            p.setPen(Qt::NoPen);
 
-        if (qAbs(dx) > qAbs(dy)) {
-            if (dx > 0) {
-                p.drawEllipse(w - 6, h / 2 - 4, 4, 4);
-                p.drawEllipse(w - 6, h / 2 + 4, 4, 4);
+            if (qAbs(dx) > qAbs(dy)) {
+                if (dx > 0) {
+                    p.drawEllipse(w - 6, h / 2 - 4, 4, 4);
+                    p.drawEllipse(w - 6, h / 2 + 4, 4, 4);
+                } else {
+                    p.drawEllipse(2, h / 2 - 4, 4, 4);
+                    p.drawEllipse(2, h / 2 + 4, 4, 4);
+                }
             } else {
-                p.drawEllipse(2, h / 2 - 4, 4, 4);
-                p.drawEllipse(2, h / 2 + 4, 4, 4);
+                if (dy > 0) {
+                    p.drawEllipse(w / 2 - 4, h - 6, 4, 4);
+                    p.drawEllipse(w / 2 + 4, h - 6, 4, 4);
+                } else {
+                    p.setBrush(Qt::darkGray);
+                    p.drawEllipse(w / 2 - 4, 2, 4, 4);
+                    p.drawEllipse(w / 2 + 4, 2, 4, 4);
+                }
             }
-        } else {
-            if (dy > 0) {
-                p.drawEllipse(w / 2 - 4, h - 6, 4, 4);
-                p.drawEllipse(w / 2 + 4, h - 6, 4, 4);
-            } else {
-                p.setBrush(Qt::darkGray);
-                p.drawEllipse(w / 2 - 4, 2, 4, 4);
-                p.drawEllipse(w / 2 + 4, 2, 4, 4);
-            }
-        }
-
+        } // QPainter 在此析构，确保 end() 在 setPixmap 前完成
         pixItem->setPixmap(newPix);
     }
 }
